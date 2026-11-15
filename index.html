@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karten-Check v1.19</title>
+<title>Karten-Check v1.21</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -220,7 +220,7 @@
     <h1>Karten-Check</h1>
     <div class="steps4"><span>📷</span><b>→</b><span>✂️</span><b>→</b><span>🔍</span><b>→</b><span>💰</span>
       <button type="button" class="spk" id="helpSpk" title="Vorlesen">🔊</button></div>
-    <div class="ver">Version 1.19 · 15.11.2026</div> <div class="ver" id="keyInfo" style="margin-left:4px"></div><br><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
+    <div class="ver">Version 1.21 · 15.11.2026</div> <div class="ver" id="keyInfo" style="margin-left:4px"></div><br><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
   </div>
 
   <details id="settings" class="box">
@@ -235,7 +235,7 @@
     </div>
     <details class="mini" id="xferBox" style="margin-top:12px">
       <summary>📲 Schlüssel vom PC aufs Tablet übertragen</summary>
-      <div class="meta"><b>Am PC</b> (App über ihre Adresse geöffnet): Schlüssel oben einfügen, dann:</div>
+      <div class="meta"><b>Am PC</b> (App über ihre Adresse geöffnet): Gemini-Schlüssel und/oder Bericht-Ablage oben eintragen, dann:</div>
       <div class="btns" style="margin-top:6px">
         <button type="button" class="btn small purple" id="xferQrBtn"><span class="ic">🔳</span>QR-Code zeigen</button>
         <button type="button" class="btn small grey" id="xferLinkBtn"><span class="ic">🔗</span>Link kopieren</button>
@@ -260,6 +260,16 @@
     </div>
     <div class="meta">Klingt jede Stimme blechern? In den Android-Einstellungen unter „Text-in-Sprache“ die Google-Sprachausgabe wählen
       und dort eine deutsche Stimme in hoher Qualität herunterladen. Danach erscheint sie hier.</div>
+    <details class="mini" id="ghBox" style="margin-top:12px">
+      <summary>📮 Bericht-Ablage (GitHub, verschlüsselt)</summary>
+      <label class="field" for="ghRepo">Ablage</label>
+      <input type="text" id="ghRepo" autocomplete="off" placeholder="name/karten-check-berichte">
+      <label class="field" for="ghTok">GitHub-Zugangsschlüssel (nur für diese Ablage)</label>
+      <input type="password" id="ghTok" autocomplete="off" placeholder="github_pat_…">
+      <label class="field" for="repPass">Bericht-Passwort (mind. 8 Zeichen, verschlüsselt jeden Bericht)</label>
+      <input type="password" id="repPass" autocomplete="off">
+      <div class="btns" style="margin-top:6px"><button type="button" class="btn small grey" id="ghTest"><span class="ic">📮</span>Ablage testen</button></div>
+    </details>
     <label class="field" for="rMail">📧 Bericht-Empfänger (für den Mail-Rückfall)</label>
     <input type="text" id="rMail" autocomplete="off">
     <div class="status" id="settingsMsg"></div>
@@ -298,6 +308,11 @@
       <summary>📧 Bericht zur Auswertung senden (für Erwachsene)</summary>
       <div class="meta">Erstellt ein Protokoll dieser Prüfung (Erkennung, Datenbank-Treffer, Preise, Echtheits-Check, Ablauf mit Zeiten) – ohne Schlüssel.</div>
       <label class="meta" style="display:block;margin:8px 0"><input type="checkbox" id="repPhotos" checked> 📷 Fotos ins PDF aufnehmen (Vorderseite, Rückseite, Lichttest, Größenvergleich)</label>
+      <div class="btns">
+        <button type="button" class="btn green" id="repGh"><span class="ic">📮</span>An Claude senden</button>
+      </div>
+      <div class="meta">Verschlüsselt den Bericht mit deinem Bericht-Passwort und legt ihn in der GitHub-Ablage ab. Claude liest ihn dort.</div>
+      <div class="meta" style="margin-top:10px">Andere Wege:</div>
       <div class="btns">
         <button type="button" class="btn small purple" id="repSend"><span class="ic">📧</span>Als PDF senden</button>
         <button type="button" class="btn small grey" id="repCopy"><span class="ic">📋</span>Kopieren</button>
@@ -342,8 +357,8 @@
 (function () {
   'use strict';
 
-  var APP_VERSION = '1.19';
-  var REPORT_MAIL = 'forexpro.systeme@gmail.com';
+  var APP_VERSION = '1.21';
+  var REPORT_MAIL = '';
 
   /* ===== Eingebauter Gemini-Schlüssel (nur private Nutzung, Datei nicht weitergeben) ===== */
   var BUILTIN_KEY = 'HIER_SCHLUESSEL_EINTRAGEN';
@@ -3005,7 +3020,7 @@
     var body = 'Der Bericht wurde als PDF gespeichert (' + name + ', Ordner Downloads). Bitte als Anhang hinzufügen.';
     reportMsg('📄 PDF gespeichert (Downloads). Die Mail öffnet sich – PDF bitte anhängen.');
     setTimeout(function () {
-      location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      location.href = 'mailto:' + (to ? encodeURIComponent(to) : '') + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
     }, 600);
   }
 
@@ -3131,6 +3146,9 @@
   /* ---------- Änderungshistorie ---------- */
 
   var CHANGELOG = [
+    ['1.21', '15.11.2026', ['„📮 An Claude senden“ legt den Bericht jetzt verschlüsselt (Passwort) in einer eigenen GitHub-Ablage ab; Claude liest ihn dort.',
+      'Google-Drive-Weg aus 1.20 entfernt; keine voreingestellte Mailadresse mehr. Ablage, Zugangsschlüssel und Passwort per QR-Code vom PC aufs Tablet.']],
+    ['1.20', '15.11.2026', ['Bericht per Knopf über ein Google-Skript in Google Drive (in 1.21 wieder entfernt).']],
     ['1.19', '15.11.2026', ['Falsche Ausgabe verhindert: Passt die Setgröße (z. B. 029/076) nicht, sucht die App in weiteren Sprachen und zeigt sonst einen klaren Hinweis „Genau diese Karte kenne ich noch nicht“ statt einer anderen Ausgabe als Treffer.',
       'Solche Notlösungen landen nicht in der Sammlung und lösen keinen falschen Echtheits-Alarm aus.',
       'Kartenbilder: fehlt das deutsche Bild, wird das englische genommen, sonst dein eigenes Foto.']],
@@ -3413,14 +3431,25 @@
 
   function xferMsg(t, err) { var m = $('xferMsg'); m.textContent = t; m.className = 'status' + (err ? ' err' : ''); }
 
+  /* Was übertragen wird: Schlüssel und/oder Bericht-Adresse (mindestens eins) */
   function keyForXfer() {
     var k = ($('gKey').value || LS.get('gkey') || '').trim();
-    if (!KEY_RE.test(k)) { xferMsg('Zuerst oben den Schlüssel einfügen (er beginnt mit AIza oder AQ.).', true); return null; }
-    return k;
+    var t = ($('ghTok').value || ghToken()).trim(), r = ($('ghRepo').value || ghRepo()).trim(), pw = $('repPass').value || repPass();
+    var x = { k: KEY_RE.test(k) ? k : '', t: GH_TOKEN_RE.test(t) ? t : '', r: GH_REPO_RE.test(r) ? r : '', pw: pw.length >= 8 ? pw : '' };
+    if (!x.t) { x.r = ''; x.pw = ''; }
+    if (!x.k && !x.t) { xferMsg('Zuerst oben den Gemini-Schlüssel und/oder die Bericht-Ablage eintragen.', true); return null; }
+    return x;
   }
 
   function appBaseUrl() { return location.origin + location.pathname.replace(/index\.html$/, ''); }
-  function keyLink(k) { return appBaseUrl() + '#key=' + encodeURIComponent(k); }
+  function keyLink(x) {
+    var parts = [];
+    if (x.k) { parts.push('key=' + encodeURIComponent(x.k)); }
+    if (x.t) { parts.push('tok=' + encodeURIComponent(x.t)); }
+    if (x.r) { parts.push('repo=' + encodeURIComponent(x.r)); }
+    if (x.pw) { parts.push('pw=' + encodeURIComponent(x.pw)); }
+    return appBaseUrl() + '#' + parts.join('&');
+  }
 
   /* Am PC: QR-Code mit Link (inkl. Schlüssel) anzeigen */
   function showKeyQr() {
@@ -3484,21 +3513,35 @@
         });
       }).then(function (txt) {
         freeCanvas(c);
-        var m = txt && decodeURIComponent(txt).match(KEY_RE);
-        if (!m) { xferMsg('Kein Schlüssel im Bild gefunden. Den QR-Code größer und scharf fotografieren.', true); return; }
-        adoptKey(m[1], 'QR-Code');
+        if (!txt) { xferMsg('Kein QR-Code im Bild gefunden. Den Code größer und scharf fotografieren.', true); return; }
+        if (!adoptFromText(txt, 'QR-Code')) { xferMsg('Im QR-Code war weder Schlüssel noch Bericht-Ablage.', true); }
       });
     }).catch(function (e) { xferMsg('QR-Code konnte nicht gelesen werden: ' + (e && e.message), true); });
   }
 
   /* Beim Start: Schlüssel aus dem Link (#key=…) übernehmen und sofort aus der Adresse entfernen */
+  /* Schlüssel und/oder Bericht-Adresse aus Link- oder QR-Text übernehmen */
+  function adoptFromText(txt, how) {
+    var got = false;
+    function q(n) { var m = txt.match(new RegExp('[#&]' + n + '=([^&#]+)')); return m ? decodeURIComponent(m[1]) : ''; }
+    var k = q('key') || (txt.match(KEY_RE) || [])[1] || '';
+    if (k && KEY_RE.test(k)) { adoptKey(k.match(KEY_RE)[1], how); got = true; }
+    var t = q('tok'), r = q('repo'), pw = q('pw');
+    if (t && GH_TOKEN_RE.test(t)) {
+      LS.set('ghtoken', t); $('ghTok').value = t;
+      if (GH_REPO_RE.test(r)) { LS.set('ghrepo', r); $('ghRepo').value = r; }
+      if (pw.length >= 8) { LS.set('reppass', pw); $('repPass').value = pw; }
+      got = true;
+      xferMsg('✅ ' + (k ? 'Gemini-Schlüssel und Bericht-Ablage' : 'Bericht-Ablage') + ' übernommen.');
+    }
+    return got;
+  }
+
   function keyFromHash() {
     var h = location.hash || '';
-    var m = h.match(/key=([^&]+)/);
-    if (!m) { return; }
+    if (!/(key|tok)=/.test(h)) { return; }
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
-    var k = decodeURIComponent(m[1]).match(KEY_RE);
-    if (k) { adoptKey(k[1], 'Link'); $('settings').open = true; }
+    if (adoptFromText(h, 'Link')) { $('settings').open = true; }
   }
 
   /* ---------- Sprachausgabe: natürlichere Stimme und Zahlen als Wörter ---------- */
@@ -3620,6 +3663,116 @@
     $('voiceTest').addEventListener('click', function () { speak(VOICE_SAMPLE); });
   }
 
+  /* ---------- Bericht verschlüsselt in eine GitHub-Ablage hochladen ---------- */
+
+  var GH_TOKEN_RE = /^(github_pat_[0-9A-Za-z_]{20,}|gh[pousr]_[0-9A-Za-z]{20,})$/;
+  var GH_REPO_RE = /^[\w.-]+\/[\w.-]+$/;
+
+  function ghDefaultRepo() {
+    var m = location.hostname.match(/^([\w-]+)\.github\.io$/i);
+    return m ? m[1] + '/karten-check-berichte' : '';
+  }
+  function ghRepo() { return (LS.get('ghrepo') || ghDefaultRepo()).trim(); }
+  function ghToken() { return (LS.get('ghtoken') || '').trim(); }
+  function repPass() { return LS.get('reppass') || ''; }
+
+  function u8ToB64(u8) {
+    var s = '', CH = 0x8000;
+    for (var i = 0; i < u8.length; i += CH) { s += String.fromCharCode.apply(null, u8.subarray(i, i + CH)); }
+    return btoa(s);
+  }
+
+  /* AES-GCM 256, Schlüssel per PBKDF2-SHA256 (200.000 Runden) aus dem Passwort */
+  function encryptReport(obj, pass) {
+    if (!window.crypto || !crypto.subtle) { return Promise.reject(new Error('Verschlüsselung wird von diesem Browser nicht unterstützt')); }
+    var enc = new TextEncoder();
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var iter = 200000;
+    return crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey']).then(function (base) {
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: iter, hash: 'SHA-256' }, base,
+        { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+    }).then(function (key) {
+      return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, enc.encode(JSON.stringify(obj)));
+    }).then(function (ct) {
+      return { format: 'karten-check-bericht', v: 1, alg: 'AES-256-GCM', kdf: 'PBKDF2-SHA256', iter: iter,
+        salt: u8ToB64(salt), iv: u8ToB64(iv), data: u8ToB64(new Uint8Array(ct)) };
+    });
+  }
+
+  function ghApi(path, opts, ms) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + ghToken(), 'X-GitHub-Api-Version': '2022-11-28' }, opts.headers || {});
+    return fetchJson('https://api.github.com' + path, opts, ms || 60000, 'GitHub');
+  }
+
+  function ghReady() {
+    if (!GH_REPO_RE.test(ghRepo())) { return 'Zuerst in den Einstellungen die Bericht-Ablage eintragen (z. B. name/karten-check-berichte).'; }
+    if (!GH_TOKEN_RE.test(ghToken())) { return 'Zuerst in den Einstellungen den GitHub-Zugangsschlüssel eintragen.'; }
+    if (repPass().length < 8) { return 'Zuerst in den Einstellungen ein Bericht-Passwort (mindestens 8 Zeichen) eintragen.'; }
+    return '';
+  }
+
+  function sendToGitHub() {
+    var why = ghReady();
+    if (why) { reportMsg('📮 ' + why, true); return; }
+    var rep = buildReport();
+    var stamp = stampOf(new Date());
+    var name = 'bericht_v' + APP_VERSION + '_' + stamp + '_' + Math.random().toString(36).slice(2, 6);
+    var photos = [];
+    if ($('repPhotos').checked) {
+      ['A', 'B'].forEach(function (s) {
+        if (lastImg[s]) { photos.push({ name: 'karte-' + s + '_vorderseite.jpg', b64: lastImg[s].parts[0] }); }
+        var di = state[s] && state[s].deepInput;
+        if (di && di.back) { photos.push({ name: 'karte-' + s + '_rueckseite.jpg', b64: di.back }); }
+        if (di && di.light) { photos.push({ name: 'karte-' + s + '_lichttest.jpg', b64: di.light }); }
+        if (di && di.size) { photos.push({ name: 'karte-' + s + '_groessenvergleich.jpg', b64: di.size }); }
+      });
+    }
+    var text = reportText(rep) + '\n\n---- VOLLSTÄNDIGE DATEN (JSON) ----\n' + JSON.stringify(rep, null, 1);
+    var btn = $('repGh');
+    btn.disabled = true;
+    reportMsg('🔒 Bericht wird verschlüsselt …');
+    encryptReport({ name: name, version: APP_VERSION, text: text, photos: photos }, repPass()).then(function (file) {
+      reportMsg('📮 Bericht wird hochgeladen …');
+      var content = u8ToB64(new TextEncoder().encode(JSON.stringify(file)));
+      return ghApi('/repos/' + ghRepo() + '/contents/berichte/' + name + '.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Bericht ' + name, content: content })
+      }, 120000);
+    }).then(function () {
+      btn.disabled = false;
+      reportMsg('✅ Bericht verschlüsselt abgelegt (' + name + '). Sag Claude im Chat einfach: „Bericht ist da“.');
+    }).catch(function (e) {
+      btn.disabled = false;
+      var m = e && e.message ? e.message : 'unbekannter Fehler';
+      if (e && (e.status === 401 || e.status === 403)) { m = 'GitHub lehnt den Zugangsschlüssel ab (abgelaufen oder ohne Schreibrecht für diese Ablage).'; }
+      if (e && e.status === 404) { m = 'Ablage nicht gefunden – Name prüfen, und ob der Zugangsschlüssel für genau diese Ablage gilt.'; }
+      reportMsg('❌ Hochladen fehlgeschlagen: ' + m, true);
+    });
+  }
+
+  /* Einstellungen: Ablage und Zugangsschlüssel prüfen */
+  function testGh() {
+    var m = $('settingsMsg');
+    var repo = ($('ghRepo').value || ghDefaultRepo()).trim(), tok = $('ghTok').value.trim() || ghToken();
+    if (!GH_REPO_RE.test(repo)) { m.textContent = '📮 Ablage im Format name/ablage eintragen, z. B. ' + (ghDefaultRepo() || 'name/karten-check-berichte') + '.'; m.className = 'status err'; return; }
+    if (!GH_TOKEN_RE.test(tok)) { m.textContent = '📮 Der Zugangsschlüssel beginnt mit github_pat_.'; m.className = 'status err'; return; }
+    m.textContent = '📮 Prüfe Ablage …'; m.className = 'status';
+    fetchJson('https://api.github.com/repos/' + repo, { headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + tok } }, 20000, 'GitHub').then(function (j) {
+      var canWrite = j && j.permissions && (j.permissions.push || j.permissions.admin);
+      var pub = j && j.private === false;
+      if (!canWrite) { m.textContent = '⚠️ Ablage gefunden, aber der Zugangsschlüssel darf nicht schreiben. Bei „Contents“ „Read and write“ wählen.'; m.className = 'status err'; return; }
+      if (!pub) { m.textContent = '⚠️ Schreiben klappt, aber die Ablage ist privat – Claude kann sie dann nicht lesen. Ablage auf „Public“ stellen.'; m.className = 'status err'; return; }
+      m.textContent = '✅ Ablage ' + repo + ' bereit (öffentlich, Schreibrecht vorhanden).' + ($('repPass').value.length >= 8 || repPass().length >= 8 ? '' : ' Jetzt noch ein Bericht-Passwort festlegen.');
+      m.className = 'status';
+    }).catch(function (e) {
+      m.textContent = '❌ ' + (e.status === 404 ? 'Ablage nicht gefunden oder Zugangsschlüssel gilt nicht für sie.' : e.status === 401 ? 'Zugangsschlüssel ungültig oder abgelaufen.' : e.message);
+      m.className = 'status err';
+    });
+  }
+
   /* ---------- Start ---------- */
 
   /* ---------- Verbindungstest ---------- */
@@ -3696,9 +3849,12 @@
     $('gKey').value = LS.get('gkey');
     $('gModel').value = LS.get('gmodel');
     $('rMail').value = LS.get('rmail');
+    $('ghRepo').value = ghRepo();
+    $('ghTok').value = ghToken();
+    $('repPass').value = repPass();
     $('autoSpk').checked = LS.get('autospeak') !== '0';
     $('autoSpk').addEventListener('change', function () { LS.set('autospeak', $('autoSpk').checked ? '1' : '0'); });
-    $('rMail').placeholder = REPORT_MAIL;
+    $('rMail').placeholder = 'Mailadresse für den Notfall-Weg (optional)';
     if (!getKey()) { $('settings').open = true; }
     if (hasBuiltin()) {
       $('gKey').placeholder = 'leer lassen = eingebauter Schlüssel';
@@ -3708,6 +3864,9 @@
       var ok1 = LS.set('gkey', $('gKey').value.trim());
       var ok2 = LS.set('gmodel', $('gModel').value.trim());
       LS.set('rmail', $('rMail').value.trim());
+      if ($('ghRepo').value.trim()) { LS.set('ghrepo', $('ghRepo').value.trim()); }
+      if ($('ghTok').value.trim()) { LS.set('ghtoken', $('ghTok').value.trim()); }
+      if ($('repPass').value) { LS.set('reppass', $('repPass').value); }
       LS.set('autospeak', $('autoSpk').checked ? '1' : '0');
       var m = $('settingsMsg');
       if (ok1 && ok2) {
@@ -3746,6 +3905,8 @@
   initSettings();
   $('aiInfo').addEventListener('click', function () { checkHealth(true); });
   $('repSend').addEventListener('click', sendReport);
+  $('repGh').addEventListener('click', sendToGitHub);
+  $('ghTest').addEventListener('click', testGh);
   $('helpSpk').addEventListener('click', function () { speak(HELP_TEXT); });
   $('cropSpk').addEventListener('click', function () { speak('Zieh die Ecken genau an die Karte. Wenn der Rahmen grün ist, ist alles gut. Dann drück auf Zuschneiden.'); });
   renderChangelog();
