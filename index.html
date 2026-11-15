@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karten-Check v1.16</title>
+<title>Karten-Check v1.17</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -207,6 +207,8 @@
   .crow.stale .cprice { color: #9a3412; }
   .cdel { border: 0; background: none; font-size: 1.1rem; cursor: pointer; opacity: .6; }
   .csum { margin-top: 10px; font-weight: 900; font-size: 1.1rem; }
+  .xferqr { margin: 10px 0; padding: 10px; background: #fff; border: 3px solid #e2e8f0; border-radius: 14px; max-width: 320px; }
+  .xferqr svg { width: 100%; height: auto; display: block; }
 </style>
 </head>
 <body>
@@ -216,7 +218,7 @@
     <h1>Karten-Check</h1>
     <div class="steps4"><span>📷</span><b>→</b><span>✂️</span><b>→</b><span>🔍</span><b>→</b><span>💰</span>
       <button type="button" class="spk" id="helpSpk" title="Vorlesen">🔊</button></div>
-    <div class="ver">Version 1.16 · 15.11.2026</div> <div class="ver" id="keyInfo" style="margin-left:4px"></div><br><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
+    <div class="ver">Version 1.17 · 15.11.2026</div> <div class="ver" id="keyInfo" style="margin-left:4px"></div><br><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
   </div>
 
   <details id="settings" class="box">
@@ -229,6 +231,21 @@
       <button class="btn small green" id="saveSettings" type="button"><span class="ic">💾</span>Speichern</button>
       <button class="btn small purple" id="diagBtn" type="button"><span class="ic">📡</span>Verbindung testen</button>
     </div>
+    <details class="mini" id="xferBox" style="margin-top:12px">
+      <summary>📲 Schlüssel vom PC aufs Tablet übertragen</summary>
+      <div class="meta"><b>Am PC</b> (App über ihre Adresse geöffnet): Schlüssel oben einfügen, dann:</div>
+      <div class="btns" style="margin-top:6px">
+        <button type="button" class="btn small purple" id="xferQrBtn"><span class="ic">🔳</span>QR-Code zeigen</button>
+        <button type="button" class="btn small grey" id="xferLinkBtn"><span class="ic">🔗</span>Link kopieren</button>
+        <button type="button" class="btn small grey" id="xferClose" style="display:none"><span class="ic">✖️</span>Code schließen</button>
+      </div>
+      <div id="xferQr" class="xferqr" style="display:none"></div>
+      <div class="meta" style="margin-top:8px"><b>Am Tablet</b>: QR-Code vom PC-Bildschirm fotografieren – oder den Link öffnen.</div>
+      <div class="btns" style="margin-top:6px">
+        <label class="btn small yellow"><span class="ic">📷</span>QR-Code scannen<input type="file" accept="image/*" capture="environment" style="display:none" id="xferScan"></label>
+      </div>
+      <div class="status" id="xferMsg"></div>
+    </details>
     <label class="meta" style="display:block;margin:12px 0 4px"><input type="checkbox" id="autoSpk"> 🔊 Ergebnis automatisch vorlesen</label>
     <label class="field" for="rMail">📧 Bericht-Empfänger (für den Mail-Rückfall)</label>
     <input type="text" id="rMail" autocomplete="off">
@@ -312,7 +329,7 @@
 (function () {
   'use strict';
 
-  var APP_VERSION = '1.16';
+  var APP_VERSION = '1.17';
   var REPORT_MAIL = 'forexpro.systeme@gmail.com';
 
   /* ===== Eingebauter Gemini-Schlüssel (nur private Nutzung, Datei nicht weitergeben) ===== */
@@ -3047,6 +3064,8 @@
   /* ---------- Änderungshistorie ---------- */
 
   var CHANGELOG = [
+    ['1.17', '15.11.2026', ['Schlüssel vom PC aufs Tablet ohne Abtippen: am PC QR-Code anzeigen oder Link kopieren, am Tablet QR-Code scannen oder Link öffnen.',
+      'Der Schlüssel steht dabei nur im Teil der Adresse nach „#“, der nicht an den Server geht, und wird sofort aus der Adresse entfernt.']],
     ['1.16', '15.11.2026', ['Installierbare App (PWA) für GitHub Pages: eigenes Symbol, Vollbild, Start vom Startbildschirm, Offline-Start der Oberfläche.',
       'Schlüssel nicht mehr in der Datei: einmal auf dem Gerät eintragen, bleibt gespeichert. Sammlung bleibt auch bei Updates erhalten.',
       'Updates: neue index.html hochladen, die App holt sie beim nächsten Start.']],
@@ -3304,6 +3323,111 @@
 
   function collMsg(t, err) { var m = $('collMsg'); if (m) { m.textContent = t; m.className = 'status' + (err ? ' err' : ''); } }
 
+  /* ---------- Schlüssel vom PC aufs Tablet übertragen (QR-Code oder Link) ---------- */
+
+  var KEY_RE = /(AIza[0-9A-Za-z_\-]{30,}|AQ\.[0-9A-Za-z_\-]{30,})/;
+
+  function loadScriptOnce(src, globalName) {
+    if (window[globalName]) { return Promise.resolve(window[globalName]); }
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = function () { window[globalName] ? resolve(window[globalName]) : reject(new Error('nicht geladen')); };
+      s.onerror = function () { reject(new Error(src + ' nicht ladbar')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function xferMsg(t, err) { var m = $('xferMsg'); m.textContent = t; m.className = 'status' + (err ? ' err' : ''); }
+
+  function keyForXfer() {
+    var k = ($('gKey').value || LS.get('gkey') || '').trim();
+    if (!KEY_RE.test(k)) { xferMsg('Zuerst oben den Schlüssel einfügen (er beginnt mit AIza oder AQ.).', true); return null; }
+    return k;
+  }
+
+  function appBaseUrl() { return location.origin + location.pathname.replace(/index\.html$/, ''); }
+  function keyLink(k) { return appBaseUrl() + '#key=' + encodeURIComponent(k); }
+
+  /* Am PC: QR-Code mit Link (inkl. Schlüssel) anzeigen */
+  function showKeyQr() {
+    var k = keyForXfer();
+    if (!k) { return; }
+    if (!/^https?:/.test(location.protocol)) { xferMsg('Der QR-Code funktioniert nur, wenn die App über ihre Internetadresse geöffnet ist.', true); return; }
+    loadScriptOnce('qrcode.min.js', 'qrcode').then(function (qrcode) {
+      var qr = qrcode(0, 'M');
+      qr.addData(keyLink(k));
+      qr.make();
+      var box = $('xferQr');
+      box.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 4, scalable: true });
+      box.style.display = 'block';
+      xferMsg('📱 Am Tablet in der App auf „QR-Code scannen“ tippen und diesen Code fotografieren – oder mit der Kamera-App scannen. Danach den Code hier schließen.');
+      $('xferClose').style.display = 'inline-flex';
+    }).catch(function (e) { xferMsg('QR-Code konnte nicht erstellt werden: ' + e.message, true); });
+  }
+
+  function hideKeyQr() { clear($('xferQr')); $('xferQr').style.display = 'none'; $('xferClose').style.display = 'none'; xferMsg(''); }
+
+  /* Am PC: Link kopieren (z. B. per Mail an sich selbst schicken) */
+  function copyKeyLink() {
+    var k = keyForXfer();
+    if (!k) { return; }
+    var link = keyLink(k);
+    function ok() { xferMsg('🔗 Link kopiert. Per Mail oder Messenger an dich selbst schicken und auf dem Tablet antippen. Danach die Nachricht löschen.'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(ok, function () { legacyCopy(link) ? ok() : xferMsg(link); });
+    } else if (legacyCopy(link)) { ok(); } else { xferMsg(link); }
+  }
+
+  function adoptKey(k, how) {
+    $('gKey').value = k;
+    LS.set('gkey', k);
+    var m = $('settingsMsg');
+    m.textContent = '🔑 Schlüssel übernommen (' + how + ') und gespeichert.';
+    m.className = 'status';
+    $('keyInfo').textContent = '🔑 Schlüssel gespeichert';
+    xferMsg('✅ Schlüssel übernommen.');
+    checkHealth(true);
+  }
+
+  /* Am Tablet: Foto vom QR-Code auswerten */
+  function scanKeyQr(file) {
+    xferMsg('🔍 QR-Code wird gelesen …');
+    loadSource(file).then(function (canvas) {
+      var s = Math.min(1, 1200 / Math.max(canvas.width, canvas.height));
+      var c = document.createElement('canvas');
+      c.width = Math.round(canvas.width * s); c.height = Math.round(canvas.height * s);
+      c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
+      freeCanvas(canvas);
+      var viaDetector = ('BarcodeDetector' in window)
+        ? new window.BarcodeDetector({ formats: ['qr_code'] }).detect(c).then(function (r) { return r && r[0] ? r[0].rawValue : null; }, function () { return null; })
+        : Promise.resolve(null);
+      return viaDetector.then(function (txt) {
+        if (txt) { return txt; }
+        return loadScriptOnce('jsQR.min.js', 'jsQR').then(function (jsQR) {
+          var d = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+          var r = jsQR(d.data, c.width, c.height);
+          return r ? r.data : null;
+        });
+      }).then(function (txt) {
+        freeCanvas(c);
+        var m = txt && decodeURIComponent(txt).match(KEY_RE);
+        if (!m) { xferMsg('Kein Schlüssel im Bild gefunden. Den QR-Code größer und scharf fotografieren.', true); return; }
+        adoptKey(m[1], 'QR-Code');
+      });
+    }).catch(function (e) { xferMsg('QR-Code konnte nicht gelesen werden: ' + (e && e.message), true); });
+  }
+
+  /* Beim Start: Schlüssel aus dem Link (#key=…) übernehmen und sofort aus der Adresse entfernen */
+  function keyFromHash() {
+    var h = location.hash || '';
+    var m = h.match(/key=([^&]+)/);
+    if (!m) { return; }
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { location.hash = ''; }
+    var k = decodeURIComponent(m[1]).match(KEY_RE);
+    if (k) { adoptKey(k[1], 'Link'); $('settings').open = true; }
+  }
+
   /* ---------- Start ---------- */
 
   /* ---------- Verbindungstest ---------- */
@@ -3433,6 +3557,11 @@
   $('helpSpk').addEventListener('click', function () { speak(HELP_TEXT); });
   $('cropSpk').addEventListener('click', function () { speak('Zieh die Ecken genau an die Karte. Wenn der Rahmen grün ist, ist alles gut. Dann drück auf Zuschneiden.'); });
   renderChangelog();
+  $('xferQrBtn').addEventListener('click', showKeyQr);
+  $('xferLinkBtn').addEventListener('click', copyKeyLink);
+  $('xferClose').addEventListener('click', hideKeyQr);
+  $('xferScan').addEventListener('change', function (e) { var f = e.target.files[0]; e.target.value = ''; if (f) { scanKeyQr(f); } });
+  keyFromHash();
   /* Installierbare App: Hintergrundskript für Offline-Start und Updates (nur über https) */
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(function () { /* ohne Offline-Start weiter */ });
