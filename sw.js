@@ -2,7 +2,7 @@
    Hält die Oberfläche für den Offline-Start bereit. Die Seite selbst wird immer zuerst frisch
    vom Server geholt, damit Updates sofort ankommen. Anfragen an Gemini und die Kartendatenbanken
    werden nie zwischengespeichert. */
-var CACHE = 'karten-check-1.17';
+var CACHE = 'karten-check-1.19';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png', 'qrcode.min.js', 'jsQR.min.js'];
 
 self.addEventListener('install', function (e) {

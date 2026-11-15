@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karten-Check v1.17</title>
+<title>Karten-Check v1.19</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -209,6 +209,8 @@
   .csum { margin-top: 10px; font-weight: 900; font-size: 1.1rem; }
   .xferqr { margin: 10px 0; padding: 10px; background: #fff; border: 3px solid #e2e8f0; border-radius: 14px; max-width: 320px; }
   .xferqr svg { width: 100%; height: auto; display: block; }
+  .mismatch { margin: 8px 0; padding: 8px 12px; border-radius: 14px; background: #fef3c7; color: #92400e; font-weight: 800; font-size: .95rem; border: 3px dashed #fcd34d; }
+  img.db.own { border: 4px solid #fde68a; }
 </style>
 </head>
 <body>
@@ -218,7 +220,7 @@
     <h1>Karten-Check</h1>
     <div class="steps4"><span>📷</span><b>→</b><span>✂️</span><b>→</b><span>🔍</span><b>→</b><span>💰</span>
       <button type="button" class="spk" id="helpSpk" title="Vorlesen">🔊</button></div>
-    <div class="ver">Version 1.17 · 15.11.2026</div> <div class="ver" id="keyInfo" style="margin-left:4px"></div><br><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
+    <div class="ver">Version 1.19 · 15.11.2026</div> <div class="ver" id="keyInfo" style="margin-left:4px"></div><br><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
   </div>
 
   <details id="settings" class="box">
@@ -247,6 +249,17 @@
       <div class="status" id="xferMsg"></div>
     </details>
     <label class="meta" style="display:block;margin:12px 0 4px"><input type="checkbox" id="autoSpk"> 🔊 Ergebnis automatisch vorlesen</label>
+    <label class="field" for="voiceSel">🗣️ Stimme</label>
+    <select id="voiceSel"></select>
+    <div class="btns" style="align-items:center">
+      <label class="meta" for="rateSel">Tempo</label>
+      <select id="rateSel" style="width:auto;margin:0">
+        <option value="0.8">langsam</option><option value="0.9">etwas langsamer</option><option value="0.95">normal</option><option value="1.05">etwas schneller</option>
+      </select>
+      <button type="button" class="btn small purple" id="voiceTest"><span class="ic">🔊</span>Probe hören</button>
+    </div>
+    <div class="meta">Klingt jede Stimme blechern? In den Android-Einstellungen unter „Text-in-Sprache“ die Google-Sprachausgabe wählen
+      und dort eine deutsche Stimme in hoher Qualität herunterladen. Danach erscheint sie hier.</div>
     <label class="field" for="rMail">📧 Bericht-Empfänger (für den Mail-Rückfall)</label>
     <input type="text" id="rMail" autocomplete="off">
     <div class="status" id="settingsMsg"></div>
@@ -329,7 +342,7 @@
 (function () {
   'use strict';
 
-  var APP_VERSION = '1.17';
+  var APP_VERSION = '1.19';
   var REPORT_MAIL = 'forexpro.systeme@gmail.com';
 
   /* ===== Eingebauter Gemini-Schlüssel (nur private Nutzung, Datei nicht weitergeben) ===== */
@@ -835,6 +848,7 @@
     return {
       src: 'TCGdex',
       id: card.id ? 'dex:' + card.id : '',
+      dexId: card.id || '',
       lang: '',
       avail: vv ? { normal: !!vv.normal, holo: !!vv.holo, reverse: !!vv.reverse } : null,
       imgHi: card.image ? card.image + '/high.jpg' : '',
@@ -922,42 +936,80 @@
     if (own === 'de' || !info.language) { add('de', de); add('en', en); add('en', de); add('de', en); }
     else if (own !== 'en' && DEX_LANGS.indexOf(own) > -1) { add(own, de); add('en', en); add('en', de); add(own, en); }
     else { add('en', en); add('en', de); add('de', de); add('de', en); }
+    var n = normNum(info.number), t = normNum(info.printed_total);
+    var fallback = null, doneLangs = {};
+
+    /* Eine Sprache durchsuchen: Liste → Nummer → Details → passt die Setgröße? */
+    function tryLang(tr, exact) {
+      return dexList(tr.lang, tr.name, exact, lg).then(function (list) {
+        if (!list.length) { return null; }
+        var fs = stepOf(lg, '🔢 Nummer abgleichen' + (n ? ' (Nr. ' + n + (t ? '/' + t : '') + ', ' + (LANG_NAMES[tr.lang] || tr.lang) + ')' : ''), 0);
+        var pick = list;
+        if (n) {
+          var hit = list.filter(function (c) { return normNum(c.localId) === n; });
+          if (hit.length) { pick = hit; fs.done(true, hit.length + ' Ausgabe(n) mit dieser Nummer'); }
+          else { fs.done(false, 'Nummer passt zu keiner Ausgabe'); }
+        } else {
+          fs.done(false, 'keine Nummer erkannt – zeige alle ' + list.length + ' Ausgaben');
+        }
+        pick = pick.slice().reverse().slice(0, 6);
+        if (onStatus) { onStatus('Preise werden geladen (' + pick.length + (pick.length === 1 ? ' Karte' : ' Karten') + ') …'); }
+        return Promise.all(pick.map(function (c) { return dexDetail(tr.lang, c, lg); })).then(function (full) {
+          var cards = full.filter(function (c) { return c && c.name; }).map(function (c) { var nc = normDex(c); nc.lang = tr.lang; return nc; });
+          var numOk = function (c) { return !n || normNum(c.number) === n; };
+          var totOk = function (c) { return !t || !c.total || String(c.total) === t; };
+          var exactCards = cards.filter(function (c) { return numOk(c) && totOk(c); });
+          var es = stepOf(lg, '🎯 Genau diese Ausgabe?' + (n ? ' (' + n + (t ? '/' + t : '') + ')' : ''), 0);
+          if (exactCards.length) {
+            es.done(true, exactCards[0].setName + ' · Nr. ' + exactCards[0].number + '/' + exactCards[0].total);
+            var rest = cards.filter(function (c) { return exactCards.indexOf(c) === -1; });
+            return { exact: true, cards: exactCards.concat(rest) };
+          }
+          es.done(false, 'nicht in der ' + (LANG_NAMES[tr.lang] || tr.lang) + 'en Datenbank' + (cards.length ? ' – nur andere Ausgaben (' + cards.map(function (c) { return c.number + '/' + c.total; }).join(', ') + ')' : ''));
+          return { exact: false, cards: cards };
+        });
+      });
+    }
+
     var i = 0, exact = true;
     function next() {
-      if (i >= tries.length) { return Promise.resolve({ lang: null, list: [] }); }
-      var t = tries[i];
-      return dexList(t.lang, t.name, exact, lg).then(function (list) {
-        if (list.length) { return { lang: t.lang, list: list }; }
+      if (i >= tries.length) { return Promise.resolve(null); }
+      var tr = tries[i];
+      if (doneLangs[tr.lang] && fallback) { i++; exact = true; return next(); }
+      return tryLang(tr, exact).then(function (r) {
+        if (r && r.exact) { return r.cards; }
+        if (r && r.cards.length) {
+          doneLangs[tr.lang] = true;
+          if (!fallback) { fallback = r.cards; }
+          i++; exact = true;
+          return next();
+        }
         if (exact) { exact = false; } else { exact = true; i++; }
         return next();
       });
     }
-    return next().then(function (r) {
-      if (!r.list.length) { return []; }
-      var list = r.list;
-      var n = normNum(info.number);
-      var fs = stepOf(lg, '🔢 Nummer abgleichen' + (n ? ' (Nr. ' + n + ')' : ''), 0);
-      if (n) {
-        var hit = list.filter(function (c) { return normNum(c.localId) === n; });
-        if (hit.length) { list = hit; fs.done(true, hit.length + ' Ausgabe(n) mit dieser Nummer'); }
-        else { fs.done(false, 'Nummer passt zu keiner Ausgabe – zeige alle ' + list.length); }
-      } else {
-        fs.done(false, 'keine Nummer erkannt – zeige alle ' + list.length + ' Ausgaben');
-      }
-      list = list.slice().reverse().slice(0, 6);
-      if (onStatus) { onStatus('Preise werden geladen (' + list.length + (list.length === 1 ? ' Karte' : ' Karten') + ') …'); }
-      return Promise.all(list.map(function (c) { return dexDetail(r.lang, c, lg); })).then(function (full) {
-        var cards = full.filter(function (c) { return c && c.name; }).map(function (c) { var n = normDex(c); n.lang = r.lang; return n; });
-        var t = normNum(info.printed_total);
-        if (t) {
-          cards.sort(function (a, b) {
-            return (String(b.total) === t ? 1 : 0) - (String(a.total) === t ? 1 : 0);
-          });
-        }
-        return cards;
-      });
+    return next().then(function (cards) {
+      if (cards) { return withImages(cards, lg); }
+      if (!fallback) { return []; }
+      fallback.forEach(function (c) { c.mismatch = true; c.wanted = (n || '?') + (t ? '/' + t : ''); });
+      return withImages(fallback, lg);
     });
   }
+
+  /* Fehlt das Kartenbild in der deutschen Datenbank, das englische Bild derselben Karte nehmen */
+  function withImages(cards, lg) {
+    var miss = cards.filter(function (c) { return !c.img && c.dexId && c.lang !== 'en'; }).slice(0, 2);
+    if (!miss.length) { return Promise.resolve(cards); }
+    return Promise.all(miss.map(function (c) {
+      return fetchJson(DEX + 'en/cards/' + encodeURIComponent(c.dexId), {}, 15000, 'Kartendatenbank TCGdex', {
+        lg: lg, what: '🖼️ Kartenbild aus englischer Datenbank (' + c.dexId + ')',
+        judge: function (e) { return e && e.image ? { ok: true, info: 'Bild gefunden' } : { ok: false, info: 'kein Bild' }; }
+      }).then(function (e) {
+        if (e && e.image) { c.img = e.image + '/low.png'; c.imgHi = e.image + '/high.jpg'; }
+      }, function () { /* ohne Bild weiter */ });
+    })).then(function () { return cards; });
+  }
+
 
   function hasPrice(pi) {
     return isNum(pi.trend) || isNum(pi.low) || isNum(pi.avg30) || isNum(bestTcg(pi));
@@ -1948,6 +2000,27 @@
   }
 
   /* Karte als Kachel (für Einzel- und Vergleichsansicht) */
+  /* Kartenbild: Datenbank-Bild, bei Fehler englische Fassung, zuletzt das eigene Foto */
+  function cardImage(slot, card) {
+    var im = el('img', 'db');
+    im.alt = card.name;
+    var own = lastImg[slot] ? 'data:image/jpeg;base64,' + lastImg[slot].parts[0] : '';
+    var chain = [];
+    if (card.img && !card.mismatch) { chain.push(card.img); if (/\/de\//.test(card.img)) { chain.push(card.img.replace('/de/', '/en/')); } }
+    if (own) { chain.push(own); }
+    if (card.img && card.mismatch && !own) { chain.push(card.img); }
+    var k = 0;
+    function nextSrc() {
+      if (k >= chain.length) { im.style.display = 'none'; return; }
+      var src = chain[k++];
+      if (src === own) { im.className = 'db own'; im.title = 'Dein Foto'; }
+      im.src = src;
+    }
+    im.onerror = nextSrc;
+    nextSrc();
+    return im;
+  }
+
   function resultCard(slot, compact, isWinner) {
     var st = state[slot];
     var box = el('div', 'rcard ' + slot + (isWinner ? ' win' : ''));
@@ -1981,13 +2054,17 @@
     box.appendChild(badge);
     var head = el('div', 'rhead kidhead');
     var left = el('div');
-    if (card.img) { var im = el('img', 'db'); im.src = card.img; im.alt = card.name; left.appendChild(im); }
+    left.appendChild(cardImage(slot, card));
     head.appendChild(left);
     var txt = el('div');
     var nm = el('div', 'rname', card.name);
     nm.appendChild(speakBtn(function () { return cardSpeech(slot); }));
     txt.appendChild(nm);
     txt.appendChild(kidValueBlock(slot, !compact));
+    if (card.mismatch) {
+      txt.appendChild(el('div', 'mismatch', '🤔 Genau diese Karte (Nr. ' + card.wanted + ') kenne ich noch nicht. Der Preis ist von einer anderen Ausgabe (' +
+        card.setName + ' ' + card.number + '/' + card.total + ') und kann abweichen.'));
+    }
     var mb = memoryBlock(slot);
     if (mb) { txt.appendChild(mb); }
     txt.appendChild(authBlock(slot));
@@ -2005,15 +2082,7 @@
 
   /* ---------- Vergleich ---------- */
 
-  function speak(text) {
-    try {
-      if (!window.speechSynthesis) { return; }
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text);
-      u.lang = 'de-DE';
-      window.speechSynthesis.speak(u);
-    } catch (e) { /* keine Sprachausgabe verfügbar */ }
-  }
+
 
   /* Ermittelt Sieger anhand des Preises der jeweils gewählten Ausführung */
   function duel() {
@@ -2121,7 +2190,7 @@
       btn.appendChild(el('span', 'ic', '🔊'));
       btn.appendChild(document.createTextNode('Vorlesen'));
       btn.addEventListener('click', function () {
-        speak(duelText(d).replace(/(\d+,\d{2}) €/g, '$1 Euro').replace(/(\d+,\d{2}) \$/g, '$1 Dollar'));
+        speak(duoSpeech());
       });
       cmp.appendChild(btn);
       out.appendChild(cmp);
@@ -2177,7 +2246,7 @@
   /* Vergleicht die vom Foto gelesenen Angaben mit der Datenbank. Gewichte: 3 stark, 2 mittel, 1 schwach */
   function quickCheck(info, card) {
     var flags = [], checked = [];
-    if (!info || !card || !card.fc) { return { state: 'none', score: 0, flags: flags, checked: checked }; }
+    if (!info || !card || !card.fc || card.mismatch) { return { state: 'none', score: 0, flags: flags, checked: checked, mismatch: !!(card && card.mismatch) }; }
     var fc = card.fc;
     var gHp = digits(info.hp), dHp = digits(fc.hp);
     if (gHp !== null) {
@@ -2599,7 +2668,7 @@
     var st = state[slot], card = curCard(slot);
     var w = el('div', 'auth');
     var q = quickOf(slot);
-    var label = st.deep ? DEEP_LABEL[st.deep.state] : AUTH_LABEL[q.state];
+    var label = st.deep ? DEEP_LABEL[st.deep.state] : (q.mismatch ? '⚪ Echtheit nicht prüfbar (andere Ausgabe)' : AUTH_LABEL[q.state]);
     var cls = st.deep ? st.deep.state : q.state;
     w.appendChild(el('div', 'achip ' + cls, '🛡️ ' + label));
     var p = pickPrice(card.pi, st.variant);
@@ -2619,7 +2688,7 @@
     var d = el('details', 'mini');
     d.appendChild(el('summary', null, '🛡️ Echtheit: Begründung'));
     if (q.state === 'none') {
-      d.appendChild(el('div', 'meta', 'Kein Schnellcheck: Die Karte wurde nicht fotografiert.'));
+      d.appendChild(el('div', 'meta', q.mismatch ? 'Kein Schnellcheck: Die genaue Ausgabe ist nicht in der Datenbank, ein Vergleich mit einer anderen Ausgabe wäre irreführend.' : 'Kein Schnellcheck: Die Karte wurde nicht fotografiert.'));
     } else {
       d.appendChild(el('div', 'meta', 'Schnellcheck – verglichen mit der Datenbank: ' + q.checked.join(', ') + '.'));
       var ul = el('ul', 'freasons');
@@ -2979,11 +3048,7 @@
     return fmt(val, cur);
   }
 
-  function kidSpeakPrice(val, cur) {
-    if (!isNum(val)) { return 'unbekannt'; }
-    if (cur === 'EUR' && val < 1) { return Math.max(1, Math.round(val * 100)) + ' Cent'; }
-    return fmtSpeak(val, cur);
-  }
+  function kidSpeakPrice(val, cur) { return sayAmount(val, cur); }
 
   function speakBtn(textFn, cls) {
     var b = el('button', 'spk' + (cls ? ' ' + cls : ''), '🔊');
@@ -2997,9 +3062,10 @@
     var st = state[slot], c = curCard(slot);
     if (!c) { return ''; }
     var p = pickPrice(c.pi, st.variant), t = kidTier(p.val);
-    if (!t) { return c.name + '. Für diese Karte habe ich leider keinen Preis gefunden.'; }
-    var extra = st.fromMemory ? (isStale(st.fromMemory) ? ' Den Preis kenne ich schon, aber er ist alt. Lass ihn neu prüfen.' : ' Die Karte kenne ich schon.') : '';
-    return c.name + '. Deine Karte ist ' + kidSpeakPrice(p.val, p.cur) + ' wert. Das ist so viel wie ' + t.word + '.' + extra;
+    if (!t) { return 'Das ist ' + c.name + '. Für diese Karte habe ich leider keinen Preis gefunden.'; }
+    var extra = st.fromMemory ? (isStale(st.fromMemory) ? ' Die Karte kenne ich schon, aber der Preis ist alt. Lass ihn bitte neu prüfen.' : ' Die Karte kenne ich übrigens schon.') : '';
+    if (c.mismatch) { return 'Das ist ' + c.name + '. Genau diese Karte kenne ich noch nicht. Eine ähnliche ist ungefähr ' + kidSpeakPrice(p.val, p.cur) + ' wert.'; }
+    return 'Das ist ' + c.name + '! Sie ist ungefähr ' + kidSpeakPrice(p.val, p.cur) + ' wert. Das ist so viel wie ' + t.word + '.' + extra;
   }
 
   function kidValueBlock(slot, big) {
@@ -3052,18 +3118,25 @@
     if (!(state.A && state.A.list && state.B && state.B.list)) { return 'Eine Karte konnte ich leider nicht prüfen.'; }
     var d = duel();
     if (!d.ok) { return 'Für eine Karte habe ich keinen Preis gefunden. Ich weiß leider nicht, wer gewinnt.'; }
-    if (!d.winner) { return 'Gleichstand! Beide Karten sind ' + kidSpeakPrice(d.a, d.cur) + ' wert.'; }
+    if (!d.winner) { return 'Unentschieden! Beide Karten sind ungefähr ' + kidSpeakPrice(d.a, d.cur) + ' wert.'; }
     var w = d.winner === 'A' ? d.ca : d.cb, l = d.winner === 'A' ? d.cb : d.ca;
     var wv = d.winner === 'A' ? d.a : d.b, lv = d.winner === 'A' ? d.b : d.a;
-    return 'Karte ' + d.winner + ' gewinnt! ' + w.name + ' ist ' + kidSpeakPrice(wv, d.cur) + ' wert. ' + l.name + ' ist ' + kidSpeakPrice(lv, d.cur) + ' wert.';
+    return 'Karte ' + d.winner + ' gewinnt! ' + w.name + ' ist ungefähr ' + kidSpeakPrice(wv, d.cur) + ' wert. ' + l.name + ' nur ' + kidSpeakPrice(lv, d.cur) + '.';
   }
 
-  var HELP_TEXT = 'Mach ein Foto von deiner Karte. Dann zieh den Rahmen genau um die Karte. Wenn er grün ist, ist alles gut. ' +
-    'Dann drück auf den grünen Knopf Los. Mit zwei Karten kannst du vergleichen, welche mehr wert ist.';
+  var HELP_TEXT = 'So geht es: Mach ein Foto von deiner Karte. Dann zieh den Rahmen genau um die Karte. ' +
+    'Wenn er grün wird, passt alles. Danach drückst du auf den grünen Knopf Los. ' +
+    'Mit zwei Karten kannst du vergleichen, welche mehr wert ist.';
 
   /* ---------- Änderungshistorie ---------- */
 
   var CHANGELOG = [
+    ['1.19', '15.11.2026', ['Falsche Ausgabe verhindert: Passt die Setgröße (z. B. 029/076) nicht, sucht die App in weiteren Sprachen und zeigt sonst einen klaren Hinweis „Genau diese Karte kenne ich noch nicht“ statt einer anderen Ausgabe als Treffer.',
+      'Solche Notlösungen landen nicht in der Sammlung und lösen keinen falschen Echtheits-Alarm aus.',
+      'Kartenbilder: fehlt das deutsche Bild, wird das englische genommen, sonst dein eigenes Foto.']],
+    ['1.18', '15.11.2026', ['Natürlichere Sprachausgabe: Beträge werden wie gesprochen vorgelesen („dreiundsechzig Cent“, „ein Euro neunundvierzig“) statt Ziffer für Ziffer.',
+      'Automatische Wahl der besten deutschen Stimme; Stimme und Tempo in den Einstellungen wählbar, mit „Probe hören“.',
+      'Vorlesen satzweise mit natürlichen Pausen; freundlichere Sätze.']],
     ['1.17', '15.11.2026', ['Schlüssel vom PC aufs Tablet ohne Abtippen: am PC QR-Code anzeigen oder Link kopieren, am Tablet QR-Code scannen oder Link öffnen.',
       'Der Schlüssel steht dabei nur im Teil der Adresse nach „#“, der nicht an den Server geht, und wird sofort aus der Adresse entfernt.']],
     ['1.16', '15.11.2026', ['Installierbare App (PWA) für GitHub Pages: eigenes Symbol, Vollbild, Start vom Startbildschirm, Offline-Start der Oberfläche.',
@@ -3174,7 +3247,7 @@
   /* Gewählte Karte einer Prüfung speichern bzw. aktualisieren */
   function rememberCard(slot) {
     var st = state[slot], c = curCard(slot);
-    if (!st || !c || st.fromMemory) { return; }
+    if (!st || !c || st.fromMemory || c.mismatch) { return; }
     var coll = loadColl(), id = cardKey(c);
     if (st.savedId && st.savedId !== id && st.createdNew) { delete coll.cards[st.savedId]; }
     var old = coll.cards[id];
@@ -3428,6 +3501,125 @@
     if (k) { adoptKey(k[1], 'Link'); $('settings').open = true; }
   }
 
+  /* ---------- Sprachausgabe: natürlichere Stimme und Zahlen als Wörter ---------- */
+
+  var NUM_1 = ['null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn', 'elf', 'zwölf',
+    'dreizehn', 'vierzehn', 'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn'];
+  var NUM_10 = ['', '', 'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig'];
+
+  /* Ganze Zahl als deutsches Wort (0 bis 999.999), z. B. 63 → "dreiundsechzig" */
+  function numWords(n, inner) {
+    n = Math.floor(Math.abs(n));
+    if (n < 20) { return NUM_1[n]; }
+    if (n < 100) {
+      var u = n % 10, t = Math.floor(n / 10);
+      return (u ? (u === 1 ? 'ein' : NUM_1[u]) + 'und' : '') + NUM_10[t];
+    }
+    if (n < 1000) {
+      var h = Math.floor(n / 100), r = n % 100;
+      return (h === 1 ? (inner ? 'ein' : '') : NUM_1[h]) + 'hundert' + (r ? numWords(r) : '');
+    }
+    if (n < 1000000) {
+      var th = Math.floor(n / 1000), r2 = n % 1000;
+      return (th === 1 ? '' : numWords(th)) + 'tausend' + (r2 ? numWords(r2, true) : '');
+    }
+    return String(n);
+  }
+
+  /* Genau 1 vor dem Hauptwort: "einen Euro wert" / "ein Euro neunundvierzig" */
+  function numBefore(n, acc) { return n === 1 ? (acc ? 'einen' : 'ein') : numWords(n); }
+
+  /* Betrag so, wie man ihn sagt: 0,63 € → "dreiundsechzig Cent", 1,49 € → "ein Euro neunundvierzig" */
+  function sayAmount(val, cur) {
+    if (!isNum(val)) { return 'unbekannt'; }
+    var unit = cur === 'EUR' ? 'Euro' : 'Dollar', sub = cur === 'EUR' ? 'Cent' : 'Cent';
+    var total = Math.max(1, Math.round(val * 100));
+    var e = Math.floor(total / 100), c = total % 100;
+    if (!e) { return numBefore(c, true) + ' ' + sub; }
+    if (!c) { return numBefore(e, true) + ' ' + unit; }
+    return numBefore(e, false) + ' ' + unit + ' ' + numWords(c);
+  }
+
+  /* Beste deutsche Stimme wählen: gespeicherte Wahl, sonst hochwertige Stimmen bevorzugen */
+  var voiceCache = [];
+
+  function germanVoices() {
+    try {
+      var all = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+      voiceCache = all.filter(function (v) { return /^de([-_]|$)/i.test(v.lang); });
+    } catch (e) { voiceCache = []; }
+    return voiceCache;
+  }
+
+  function voiceScore(v) {
+    var s = 0, n = v.name || '';
+    if (/^de[-_]DE/i.test(v.lang)) { s += 3; }
+    if (/natural|neural|wavenet|premium|enhanced|online|hq|high/i.test(n)) { s += 5; }
+    if (/google/i.test(n)) { s += 3; }
+    if (/samsung/i.test(n)) { s += 2; }
+    if (/compact|espeak|pico/i.test(n)) { s -= 5; }
+    return s;
+  }
+
+  function pickVoice() {
+    var list = voiceCache.length ? voiceCache : germanVoices();
+    if (!list.length) { return null; }
+    var want = LS.get('voice');
+    if (want) { for (var i = 0; i < list.length; i++) { if (list[i].voiceURI === want || list[i].name === want) { return list[i]; } } }
+    return list.slice().sort(function (a, b) { return voiceScore(b) - voiceScore(a); })[0];
+  }
+
+  function speechRate() { var r = parseFloat(LS.get('rate')); return isNum(r) && r >= 0.6 && r <= 1.4 ? r : 0.95; }
+
+  /* Satzweise sprechen: natürlichere Pausen, und lange Texte brechen auf Android nicht ab */
+  function speak(text) {
+    try {
+      if (!window.speechSynthesis || !text) { return; }
+      speechSynthesis.cancel();
+      var v = pickVoice(), rate = speechRate();
+      String(text).split(/(?<=[.!?])\s+/).forEach(function (part) {
+        part = part.trim();
+        if (!part) { return; }
+        var u = new SpeechSynthesisUtterance(part);
+        u.lang = v ? v.lang : 'de-DE';
+        if (v) { u.voice = v; }
+        u.rate = rate;
+        u.pitch = 1.05;
+        speechSynthesis.speak(u);
+      });
+    } catch (e) { /* keine Sprachausgabe verfügbar */ }
+  }
+
+  function renderVoiceSelect() {
+    var sel = $('voiceSel');
+    if (!sel) { return; }
+    var list = germanVoices(), cur = pickVoice();
+    clear(sel);
+    if (!list.length) {
+      var o0 = el('option', null, 'Keine deutsche Stimme gefunden');
+      sel.appendChild(o0);
+      return;
+    }
+    list.slice().sort(function (a, b) { return voiceScore(b) - voiceScore(a); }).forEach(function (v) {
+      var o = el('option', null, v.name + (v.localService === false ? ' (online)' : ''));
+      o.value = v.voiceURI || v.name;
+      if (cur && (cur.voiceURI === v.voiceURI)) { o.selected = true; }
+      sel.appendChild(o);
+    });
+  }
+
+  var VOICE_SAMPLE = 'Hallo! Deine Karte ist dreiundsechzig Cent wert. Das ist so viel wie ein Eis.';
+
+  function initVoice() {
+    if (!window.speechSynthesis) { return; }
+    renderVoiceSelect();
+    try { speechSynthesis.addEventListener('voiceschanged', renderVoiceSelect); } catch (e) { speechSynthesis.onvoiceschanged = renderVoiceSelect; }
+    $('voiceSel').addEventListener('change', function () { LS.set('voice', $('voiceSel').value); speak(VOICE_SAMPLE); });
+    $('rateSel').value = String(speechRate());
+    $('rateSel').addEventListener('change', function () { LS.set('rate', $('rateSel').value); speak(VOICE_SAMPLE); });
+    $('voiceTest').addEventListener('click', function () { speak(VOICE_SAMPLE); });
+  }
+
   /* ---------- Start ---------- */
 
   /* ---------- Verbindungstest ---------- */
@@ -3557,6 +3749,7 @@
   $('helpSpk').addEventListener('click', function () { speak(HELP_TEXT); });
   $('cropSpk').addEventListener('click', function () { speak('Zieh die Ecken genau an die Karte. Wenn der Rahmen grün ist, ist alles gut. Dann drück auf Zuschneiden.'); });
   renderChangelog();
+  initVoice();
   $('xferQrBtn').addEventListener('click', showKeyQr);
   $('xferLinkBtn').addEventListener('click', copyKeyLink);
   $('xferClose').addEventListener('click', hideKeyQr);
