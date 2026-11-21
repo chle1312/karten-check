@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karten-Check v1.26</title>
+<title>Karten-Check v1.30</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -188,7 +188,28 @@
   .single .kidhead > div:last-child { flex: 1; text-align: center; }
   .rcard .rname { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; }
   .banner .big { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; }
-  .banner .vs { font-size: 2.6rem; margin: 6px 0; }
+  .banner .vs { font-size: 2.2rem; margin: 6px 0; font-weight: 900; }
+  .kid .kicon { display: block; }
+  .kimg { height: 1em; width: auto; vertical-align: middle; margin: 0 1px; }
+  .banner .vs .kimg { height: 1.15em; }
+  .crow .cicon .kimg { height: 1.2em; }
+  .kid .kicon .kimg.eis { height: 2.2em; } .kid.big .kicon .kimg.eis { height: 2.2em; }
+  .banner .vs .kimg.eis { height: 2.3em; margin: 0 4px; }
+  .crow .cicon .kimg.eis { height: 2.6em; }
+  .sortbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .sortbar button { border: 3px solid #1f2a44; background: #fff; border-radius: 999px; padding: 7px 12px; font-family: inherit; font-weight: 800; font-size: .95rem; cursor: pointer; color: #1e293b; }
+  .sortbar button.on { background: #ffd84a; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18); }
+  .crow .cimg { cursor: pointer; } .crow .cimg img { display: block; }
+  .cfav { border: 0; background: none; font-size: 1.7rem; cursor: pointer; filter: grayscale(1); opacity: .35; padding: 0 4px; }
+  .cfav.on { filter: none; opacity: 1; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; } .pair.one { grid-template-columns: 1fr; max-width: 320px; margin-left: auto; margin-right: auto; }
+  .pair figure { margin: 0; text-align: center; } .pair figcaption { font-weight: 800; margin-top: 4px; color: #475569; }
+  .pair img { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 10px; border: 4px solid #fde68a; background: #fff; }
+  .pair figure.found img { border-color: #86efac; }
+  .gate { text-align: center; background: rgba(255,255,255,.93); border: 4px solid #1f2a44; border-radius: 26px; padding: 14px; box-shadow: 0 6px 0 rgba(31,42,68,.35); } .gate .gq { font-size: 1.9rem; font-weight: 900; margin: 14px 0; color: #1d4ed8; }
+  .gate input { max-width: 220px; text-align: center; font-size: 1.5rem; margin: 0 auto 10px; display: block; }
+  .adulttop { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .arow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 2px dashed #e2e8f0; } .arow img { width: 44px; border-radius: 5px; } .arow .amid { flex: 1; min-width: 0; }
   details.adult { margin-top: 14px; text-align: left; }
   details.cmp > summary { font-weight: 800; cursor: pointer; }
   .clv { margin: 10px 0; } .clh { font-weight: 900; } .clv ul { margin: 4px 0; padding-left: 20px; } .clv li { margin: 2px 0; font-size: .95rem; }
@@ -298,7 +319,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   <div class="hero">
     <div class="logo">🃏✨💰</div>
     <h1>Karten-Check</h1>
-    <div class="ver">Version 1.26 · 15.11.2026</div> <div class="ver" id="keyInfo" style="margin-left:4px"></div><br><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
+    <div class="ver">Version 1.30 · 21.11.2026</div>
   </div>
 
   <div id="scrStart" class="scr">
@@ -308,12 +329,26 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       <div class="stile" id="goColl" role="button" tabindex="0"><span class="si">📒</span>Meine Karten<span class="sc" id="collCountStart"></span></div>
     </div>
     <div class="subtiles">
-      <div class="subtile" id="goSet" role="button" tabindex="0">⚙️ Einstellungen<span id="setWarnTxt"></span></div>
+      <div class="subtile" id="goSet" role="button" tabindex="0">🔒 Für Erwachsene<span id="setWarnTxt"></span></div>
     </div>
   </div>
 
   <div id="homeBar" style="display:none"><button type="button" class="btn small" id="homeBtn"><span class="ic">🏠</span>Start</button></div>
 
+  <div id="scrAdult" class="scr">
+    <div id="adultGate" class="box gate">
+      <h2 style="justify-content:center">🔒 Nur für Erwachsene</h2>
+      <div class="meta">Bitte die Aufgabe lösen:</div>
+      <div class="gq" id="gateQ"></div>
+      <input type="text" id="gateIn" inputmode="numeric" autocomplete="off" placeholder="Ergebnis">
+      <div class="btns" style="justify-content:center"><button type="button" class="btn green" id="gateGo"><span class="ic">🔓</span>Öffnen</button></div>
+      <div class="status" id="gateMsg"></div>
+    </div>
+    <div id="adultBody" style="display:none">
+      <div class="adulttop">
+        <div class="ver" id="keyInfo"></div><div class="ver ai" id="aiInfo" role="button" tabindex="0"></div>
+        <button type="button" class="btn small grey" id="adultLock"><span class="ic">🔒</span>Sperren</button>
+      </div>
   <details id="settings" class="box">
     <summary>⚙️ Einstellungen (für Erwachsene)</summary>
     <div class="setwarn" id="setWarn"></div>
@@ -367,6 +402,29 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     <div class="status" id="settingsMsg"></div>
     <div id="diag" style="font-size:.95rem;line-height:1.45;margin-top:6px"></div>
   </details>
+      <details class="box" id="archBox">
+        <summary>🗄️ Archiv (gelöschte Karten) <span id="archCount"></span></summary>
+        <div class="meta">Karten, die in „Meine Karten“ gelöscht wurden. Hier kannst du sie wiederherstellen.</div>
+        <div id="archList"></div>
+        <div class="btns" style="margin-top:8px"><button type="button" class="btn small grey" id="archClr"><span class="ic">🧹</span>Archiv leeren</button></div>
+      </details>
+      <details class="box" id="backupBox">
+        <summary>💾 Sammlung sichern / laden</summary>
+        <div class="meta">Die Sammlung wird nur auf diesem Gerät gespeichert und bleibt in der installierten App auch bei Updates erhalten.
+          „Sichern“ erstellt eine Notfall-Kopie als Datei (mit Archiv, Favoriten und Scan-Fotos), „Laden“ übernimmt eine solche Kopie.</div>
+        <div class="btns" style="margin-top:8px">
+          <button type="button" class="btn small purple" id="collExp"><span class="ic">💾</span>Sichern</button>
+          <label class="btn small"><span class="ic">📂</span>Laden<input type="file" accept="application/json,.json" style="display:none" id="collImp"></label>
+          <button type="button" class="btn small grey" id="collClr"><span class="ic">🗑️</span>Alles löschen</button>
+        </div>
+        <div class="status" id="collMsg"></div>
+      </details>
+  <details class="box" id="chBox">
+    <summary>📜 Änderungshistorie (für Erwachsene)</summary>
+    <div id="chlog"></div>
+  </details>
+    </div>
+  </div>
 
   <div id="scrIn" class="scr">
     <div class="grid" id="slots"></div>
@@ -384,18 +442,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   <div id="scrColl" class="scr">
     <details class="box coll" id="collBox">
       <summary>📒 Meine Karten <span id="collCount"></span></summary>
+      <div id="collBar" class="sortbar"></div>
       <div id="collList"></div>
-      <details class="mini">
-        <summary>👨 Sammlung sichern / laden (für Erwachsene)</summary>
-        <div class="meta">Die Sammlung wird nur auf diesem Gerät gespeichert und bleibt in der installierten App auch bei Updates erhalten.
-          „Sichern“ erstellt eine Notfall-Kopie als Datei, „Laden“ übernimmt eine solche Kopie (z. B. aus der alten HTML-Version).</div>
-        <div class="btns" style="margin-top:8px">
-          <button type="button" class="btn small purple" id="collExp"><span class="ic">💾</span>Sichern</button>
-          <label class="btn small"><span class="ic">📂</span>Laden<input type="file" accept="application/json,.json" style="display:none" id="collImp"></label>
-          <button type="button" class="btn small grey" id="collClr"><span class="ic">🗑️</span>Alles löschen</button>
-        </div>
-      </details>
-      <div class="status" id="collMsg"></div>
     </details>
   </div>
 
@@ -425,10 +473,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     </details>
   </div>
 
-  <details class="box" id="chBox" style="display:none">
-    <summary>📜 Änderungshistorie (für Erwachsene)</summary>
-    <div id="chlog"></div>
-  </details>
+
 
   <p class="note">
     Preise stammen von TCGdex (Rückfall: pokemontcg.io), jeweils Cardmarket in EUR und TCGplayer in USD, und können dem Markt hinterherhinken.
@@ -437,6 +482,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 </div>
 
 <div class="ov light" id="fakeOv" style="display:none;z-index:9"><div class="fbox" id="fakeBox"></div></div>
+<div class="ov light" id="cardOv" style="display:none;z-index:9"><div class="fbox" id="cardBox"></div></div>
 
 <div class="ov" id="cropOv" style="display:none">
   <div class="ovbox">
@@ -457,7 +503,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 (function () {
   'use strict';
 
-  var APP_VERSION = '1.26';
+  var APP_VERSION = '1.30';
   var REPORT_MAIL = '';
 
   /* ===== Eingebauter Gemini-Schlüssel (nur private Nutzung, Datei nicht weitergeben) ===== */
@@ -500,6 +546,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     '"illustrator":"Name hinter Illus. unten links, sonst leer",' +
     '"regulation_mark":"einzelner Buchstabe im Kästchen unten links, z. B. G, sonst leer",' +
     '"set_code":"Set-Kürzel unten links, z. B. OBF, sonst leer",' +
+    '"anniversary_30":"ja oder nein – ja NUR, wenn das Logo zum 30-jährigen Jubiläum (ein Pikachu-Symbol mit der Zahl 30) oder ein Stempel mit 30th auf der Karte zu sehen ist, z. B. hinter dem Text, neben dem Bild oder als Stempel; sonst nein",' +
     '"auffaelligkeiten":["kurze deutsche Sätze"]}. ' +
     'In "auffaelligkeiten" gehören NUR eindeutige Hinweise auf einen fehlerhaften Druck oder eine Fälschung: ' +
     'Rechtschreib- oder Übersetzungsfehler, falsche oder uneinheitliche Schrift, falsche Energiesymbole, ' +
@@ -825,6 +872,10 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     });
   }
 
+  /* 30th Celebration (Sept. 2026): Sonderausgaben bekannter Karten mit 30-Jahre-Logo */
+  var IS30_RE = /30\s*th|30\.?\s*(celebration|anniversary|jubil|jahre)/i;
+  function is30(info) { return !!info && (info.anniversary_30 === true || /^(ja|yes|true|1)\b/i.test(String(info.anniversary_30 || '').trim())); }
+
   function identify(images, onStatus, lg) {
     return geminiJSON(buildParts(images), onStatus, lg, '🤖 Karte erkennen', '📝 Antwort auswerten (Name und Nummer)').then(function (r) {
       var o = r.o;
@@ -833,7 +884,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       r.step.done(!!nm && !!o.number, 'Name: ' + (nm || '–') + (o.name_en && o.name_en !== o.name ? ' (engl. ' + o.name_en + ')' : '') +
         ' · Nr.: ' + (nr || 'nicht lesbar') + ' · Sprache: ' + (o.language || '?') + ' · Ausführung: ' + VNAME[normVariant(o.variant)] +
         (o.variant_reason ? ' (' + String(o.variant_reason).slice(0, 160) + ')' : '') +
-        (o.hp ? ' · KP ' + o.hp : '') + (isArr(o.attacks) && o.attacks.length ? ' · ' + o.attacks.length + ' Attacke(n)' : ''));
+        (is30(o) ? ' · 30-Jahre-Logo: JA' : '') + (o.hp ? ' · KP ' + o.hp : '') + (isArr(o.attacks) && o.attacks.length ? ' · ' + o.attacks.length + ' Attacke(n)' : ''));
       return o;
     });
   }
@@ -1247,9 +1298,11 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     var onSt = function (msg) { setStatus(slot, msg); };
     var lg = slotLogger(slot);
     var dexErr = null;
+    var a30 = is30(info);
     return dexSearch(info, onSt, lg).catch(function (e) { dexErr = e; return []; }).then(function (dex) {
       var priced = dex.some(function (c) { return hasPrice(c.pi); });
-      if (priced) { return dex; }
+      var has30 = dex.some(function (c) { return IS30_RE.test(c.setName || ''); });
+      if (priced && (!a30 || has30)) { return dex; }
       setStatus(slot, '🌐 Zweite Preisquelle wird gefragt …');
       return searchCards(info, onSt, lg).then(function (r) {
         return dex.concat(r.map(normPtcg));
@@ -1258,6 +1311,23 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
         throw dexErr || e;
       });
     }).then(function (list) {
+      if (a30) {
+        var f30 = list.filter(function (c) { return IS30_RE.test(c.setName || ''); });
+        var s30 = stepOf(lg, '🎉 30-Jahre-Logo erkannt', 0);
+        if (f30.length) {
+          s30.done(true, 'nur Treffer aus dem 30th-Celebration-Set: ' + f30.map(function (c) { return c.name + ' ' + c.number + '/' + c.total; }).join(', '));
+          list = f30;
+        } else if (list.length) {
+          s30.done(false, 'Karte nicht im 30th-Celebration-Set der Datenbank – Originalpreise werden NICHT verwendet');
+          list = list.slice(0, 1).map(function (c) {
+            var n = {}; for (var kk in c) { if (Object.prototype.hasOwnProperty.call(c, kk)) { n[kk] = c[kk]; } }
+            n.pi = { trend: null, low: null, avg7: null, avg30: null, rev: null, revLabel: '', cmUrl: c.pi.cmUrl, cmDate: '', variants: [], tcgUrl: null, tcgDate: '' };
+            n.mismatch = true; n.anniv = true; n.wanted = (normNum(info.number) || '?') + (info.printed_total ? '/' + normNum(info.printed_total) : '');
+            n.avail = null;
+            return n;
+          });
+        } else { s30.done(null, 'keine Treffer'); }
+      }
       list.sort(function (a, b) { return (hasPrice(b.pi) ? 1 : 0) - (hasPrice(a.pi) ? 1 : 0); });
       if (!list.length) {
         finalVerdict(slot, false, 'keine passende Karte gefunden');
@@ -1324,18 +1394,46 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   }
 
   var screen = 'start', cmpMode = 1;
+
+  /* ---------- Erwachsenen-Bereich: Rechenaufgabe als Sperre (Kinderschutz, keine echte Sicherheit) ---------- */
+  var adultOk = false, adultQ = null;
+  function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function newAdultQ() {
+    var t = ri(0, 3), q, a;
+    if (t === 0) { var x = ri(13, 29), y = ri(7, 19), z = ri(20, Math.min(99, x * y - 10)); q = '(' + x + ' × ' + y + ') − ' + z + ' = ?'; a = x * y - z; }
+    else if (t === 1) { var pc = [15, 35, 45, 65, 85][ri(0, 4)], n = 20 * ri(6, 30); q = 'Wie viel sind ' + pc + ' % von ' + n + '?'; a = pc * n / 100; }
+    else if (t === 2) { var k = ri(3, 9), x2 = ri(6, 25), b = ri(5, 40); q = k + ' · x + ' + b + ' = ' + (k * x2 + b) + '  –  Wie groß ist x?'; a = x2; }
+    else { var u = ri(13, 30), v = ri(5, u - 4); q = u + '² − ' + v + '² = ?'; a = u * u - v * v; }
+    adultQ = { q: q, a: a };
+    $('gateQ').textContent = q;
+    $('gateIn').value = '';
+  }
+  function renderAdult() {
+    $('adultGate').style.display = adultOk ? 'none' : 'block';
+    $('adultBody').style.display = adultOk ? 'block' : 'none';
+    if (adultOk) { $('settings').open = true; renderArch(); updSetWarn(); }
+    else { newAdultQ(); $('gateMsg').textContent = ''; }
+  }
+  function tryGate() {
+    var v = parseFloat(String($('gateIn').value).replace(',', '.').replace(/[−–]/g, '-'));
+    if (isNum(v) && Math.abs(v - adultQ.a) < 1e-9) { adultOk = true; renderAdult(); return; }
+    newAdultQ();
+    $('gateMsg').textContent = 'Nicht ganz – hier eine neue Aufgabe.';
+    $('gateMsg').className = 'status err';
+  }
   function showScreen(which) {
     if (which === true) { which = 'out'; } else if (which === false) { which = 'in'; }
+    if (which === 'set') { which = 'adult'; }
+    if (screen === 'adult' && which !== 'adult') { adultOk = false; }
     screen = which;
     $('scrStart').style.display = which === 'start' ? 'block' : 'none';
     $('scrIn').style.display = which === 'in' ? 'block' : 'none';
     $('scrColl').style.display = which === 'coll' ? 'block' : 'none';
     $('scrOut').style.display = which === 'out' ? 'block' : 'none';
-    $('settings').style.display = which === 'set' ? 'block' : 'none';
-    $('chBox').style.display = which === 'start' ? 'block' : 'none';
-    $('homeBar').style.display = (which === 'in' || which === 'coll' || which === 'set') ? 'block' : 'none';
-    if (which === 'set') { $('settings').open = true; }
-    if (which === 'coll') { $('collBox').open = true; }
+    $('scrAdult').style.display = which === 'adult' ? 'block' : 'none';
+    $('homeBar').style.display = (which === 'in' || which === 'coll' || which === 'adult') ? 'block' : 'none';
+    if (which === 'adult') { renderAdult(); }
+    if (which === 'coll') { $('collBox').open = true; renderColl(); }
     if (which === 'start') { updSetWarn(); }
     try { window.scrollTo(0, 0); } catch (e) { /* egal */ }
   }
@@ -2259,7 +2357,9 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     txt.appendChild(nm);
     txt.appendChild(kidValueBlock(slot, !compact));
     if (card.mismatch) {
-      txt.appendChild(el('div', 'mismatch', '🤔 Genau diese Karte (Nr. ' + card.wanted + ') kenne ich noch nicht. Der Preis ist von einer anderen Ausgabe (' +
+      txt.appendChild(el('div', 'mismatch', card.anniv
+        ? '🎉 Das ist die 30-Jahre-Sonderausgabe (30th Celebration). Die finde ich noch nicht in der Datenbank – einen Preis gebe ich lieber nicht an, weil die normale Ausgabe viel weniger wert ist.'
+        : '🤔 Genau diese Karte (Nr. ' + card.wanted + ') kenne ich noch nicht. Der Preis ist von einer anderen Ausgabe (' +
         card.setName + ' ' + card.number + '/' + card.total + ') und kann abweichen.'));
     }
     var mb = memoryBlock(slot);
@@ -2344,9 +2444,20 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       var bt = el('div', 'big', '👑 Karte ' + d.winner + ' gewinnt!');
       bt.appendChild(speakBtn(duoSpeech));
       ban.appendChild(bt);
-      var ta = kidTier(d.a), tb = kidTier(d.b);
-      ban.appendChild(el('div', 'vs', (ta ? ta.icon : '?') + ' A  ' + (d.winner === 'A' ? '>' : '<') + '  B ' + (tb ? tb.icon : '?')));
-      ban.appendChild(el('div', 'sub', wc.name + ' ist mehr wert!'));
+      var kd = kidDuelTiers(d);
+      var sameU = kd.a.icon === kd.b.icon && kd.a.n !== kd.b.n;
+      var vs = el('div', 'vs');
+      var vsPart = function (o) {
+        var sp = el('span');
+        if (sameU) { sp.appendChild(document.createTextNode(o.n)); }
+        if (o.kind === 'gummi') { sp.appendChild(bearImg(0)); } else if (o.kind === 'eis') { sp.appendChild(eisImg(o.n)); } else { sp.appendChild(document.createTextNode(o.icon)); }
+        return sp;
+      };
+      vs.appendChild(vsPart(kd.a));
+      vs.appendChild(document.createTextNode(' A  ' + (d.winner === 'A' ? '>' : '<') + '  B '));
+      vs.appendChild(vsPart(kd.b));
+      ban.appendChild(vs);
+      ban.appendChild(el('div', 'sub', kidRatioText(d.ratio, wc.name)));
     } else if (d.ok) {
       var bt2 = el('div', 'big', '🤝 Gleich viel wert!');
       bt2.appendChild(speakBtn(duoSpeech));
@@ -3225,18 +3336,76 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 
   /* ---------- Kindgerechte Anzeige (Leseanfänger) ---------- */
 
-  var KID_TIERS = [
-    { max: 0.10, icon: '🍬', word: 'ein Bonbon', stars: 1 },
-    { max: 1, icon: '🍦', word: 'ein Eis', stars: 2 },
-    { max: 10, icon: '🧸', word: 'ein kleines Spielzeug', stars: 3 },
-    { max: 50, icon: '🎮', word: 'ein Spiel', stars: 4 },
-    { max: Infinity, icon: '💎', word: 'ein Schatz', stars: 5 }
-  ];
+  /* Wertvergleich für Caio (ab 1.27): Gummibärchen, Kugeln Eis, Kinobesuche.
+     1 Gummibärchen = 2,5 Cent (Goldbär 2,3 g, Tüte 175 g ≈ 76 Stück für ca. 1,60–2,50 €)
+     1 Kugel Eis = 2 € · 1 Kinobesuch = 10 €. Dollar werden mit festem Kurs umgerechnet. */
+  var USD_EUR = 0.9098;   /* 1 US-Dollar in Euro – EZB-Referenzkurs 19.11.2026 (1 EUR = 1,0992 USD) */
+  var KID_KINDS = {
+    gummi: { icon: '🐻', stars: 1, unit: 0.025 },
+    eis: { icon: '🍦', stars: 2, unit: 2 },
+    kino: { icon: '🎬', stars: 3, unit: 10 }
+  };
 
-  function kidTier(val) {
+  var BEARS = ['baer-1-gruen.png', 'baer-2-orange.png', 'baer-3-rot.png', 'baer-4-weiss.png', 'baer-5-gelb.png', 'baer-6-dunkelrot.png'];
+  function bearImg(i) {
+    var im = el('img', 'kimg');
+    im.src = BEARS[i % BEARS.length]; im.alt = '🐻'; im.draggable = false;
+    return im;
+  }
+
+  function eisImg(n) {
+    var im = el('img', 'kimg eis');
+    im.src = 'eis-' + Math.max(1, Math.min(5, n)) + '.png'; im.alt = '🍦'; im.draggable = false;
+    return im;
+  }
+
+  function toEur(val, cur) { return cur === 'USD' ? val * USD_EUR : val; }
+  function kidKind(eur) { return eur < 2 ? 'gummi' : (eur < 10 ? 'eis' : 'kino'); }
+  function kidCount(eur, kind) { return Math.max(1, Math.round(eur / KID_KINDS[kind].unit)); }
+
+  function kidWord(kind, n) {
+    if (kind === 'gummi') { return n + ' Gummibärchen'; }
+    if (kind === 'eis') { return n === 1 ? 'eine Kugel Eis' : n + ' Kugeln Eis'; }
+    return n === 1 ? 'einmal Kino' : n + '-mal Kino';
+  }
+
+  function kidSpeakWord(kind, n) {
+    if (kind === 'gummi') { return (n === 1 ? 'ein' : numWords(n)) + ' Gummibärchen'; }
+    if (kind === 'eis') { return n === 1 ? 'eine Kugel Eis' : numWords(n) + ' Kugeln Eis'; }
+    return n === 1 ? 'einmal Kino' : numWords(n) + 'mal Kino';
+  }
+
+  function kidTier(val, cur) {
     if (!isNum(val)) { return null; }
-    for (var i = 0; i < KID_TIERS.length; i++) { if (val < KID_TIERS[i].max) { return KID_TIERS[i]; } }
-    return KID_TIERS[KID_TIERS.length - 1];
+    var eur = toEur(val, cur), kind = kidKind(eur), n = kidCount(eur, kind), k = KID_KINDS[kind];
+    var rep = new Array((n <= 5 ? n : (kind === 'gummi' ? 1 : 5)) + 1).join(k.icon);
+    return { kind: kind, n: n, icon: k.icon, row: rep, cnt: n <= 5 ? n : 5, stars: k.stars, word: kidWord(kind, n), speak: kidSpeakWord(kind, n), eur: eur };
+  }
+
+  /* Zwei Werte in gemeinsamer Einheit (der des kleineren Werts); wird die Zahl zu groß, jeder in seiner eigenen */
+  function kidDuelTiers(d) {
+    var ea = toEur(d.a, d.cur), eb = toEur(d.b, d.cur);
+    var kind = kidKind(Math.min(ea, eb));
+    if (Math.round(Math.max(ea, eb) / KID_KINDS[kind].unit) <= 100) {
+      var mk = function (e) { var n = kidCount(e, kind); return { n: n, icon: KID_KINDS[kind].icon, kind: kind }; };
+      return { a: mk(ea), b: mk(eb) };
+    }
+    var ta = kidTier(d.a, d.cur), tb = kidTier(d.b, d.cur);
+    return { a: { n: ta.n, icon: ta.icon, kind: ta.kind }, b: { n: tb.n, icon: tb.icon, kind: tb.kind } };
+  }
+
+  function kidRatioText(r, name) {
+    if (!r || r < 1.2) { return 'Aber nur ganz knapp – fast gleich viel!'; }
+    if (r < 1.8) { return name + ' ist etwa anderthalbmal so viel wert!'; }
+    if (r >= 100) { return name + ' ist viel, viel mehr wert!'; }
+    return name + ' ist ' + Math.round(r) + '-mal so viel wert!';
+  }
+
+  function kidRatioSpeech(r) {
+    if (!r || r < 1.2) { return 'Aber nur ganz knapp.'; }
+    if (r < 1.8) { return 'Das ist etwa anderthalbmal so viel.'; }
+    if (r >= 100) { return 'Das ist viel, viel mehr.'; }
+    return 'Das ist ' + numWords(Math.round(r)) + 'mal so viel.';
   }
 
   /* Unter 1 € in Cent – das kennen Kinder besser */
@@ -3259,23 +3428,25 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   function cardSpeech(slot) {
     var st = state[slot], c = curCard(slot);
     if (!c) { return ''; }
-    var p = pickPrice(c.pi, st.variant), t = kidTier(p.val);
+    var p = pickPrice(c.pi, st.variant), t = kidTier(p.val, p.cur);
     if (!t) { return 'Das ist ' + c.name + '. Für diese Karte habe ich leider keinen Preis gefunden.'; }
     var extra = st.fromMemory ? (isStale(st.fromMemory) ? ' Die Karte kenne ich schon, aber der Preis ist alt. Lass ihn bitte neu prüfen.' : ' Die Karte kenne ich übrigens schon.') : '';
     if (c.mismatch) { return 'Das ist ' + c.name + '. Genau diese Karte kenne ich noch nicht. Eine ähnliche ist ungefähr ' + kidSpeakPrice(p.val, p.cur) + ' wert.'; }
-    return 'Das ist ' + c.name + '! Sie ist ungefähr ' + kidSpeakPrice(p.val, p.cur) + ' wert. Das ist so viel wie ' + t.word + '.' + extra;
+    return 'Das ist ' + c.name + '! Sie ist ungefähr ' + kidSpeakPrice(p.val, p.cur) + ' wert. Das ist so viel wie ' + t.speak + '.' + extra;
   }
 
   function kidValueBlock(slot, big) {
     var st = state[slot], c = curCard(slot);
-    var p = pickPrice(c.pi, st.variant), t = kidTier(p.val);
+    var p = pickPrice(c.pi, st.variant), t = kidTier(p.val, p.cur);
     var w = el('div', 'kid' + (big ? ' big' : ''));
     if (!t) {
       w.appendChild(el('div', 'kicon', '🤷'));
       w.appendChild(el('div', 'kprice none', 'Kein Preis'));
       return w;
     }
-    w.appendChild(el('div', 'kicon bounce', t.icon));
+    var ki = el('div', 'kicon bounce');
+    if (t.kind === 'gummi') { for (var bi = 0; bi < t.cnt; bi++) { ki.appendChild(bearImg(bi)); } } else if (t.kind === 'eis') { ki.appendChild(eisImg(t.n)); } else { ki.textContent = t.row; }
+    w.appendChild(ki);
     w.appendChild(el('div', 'kprice', kidPrice(p.val, p.cur)));
     var stars = '';
     for (var i = 0; i < 5; i++) { stars += i < t.stars ? '⭐' : '☆'; }
@@ -3319,7 +3490,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     if (!d.winner) { return 'Unentschieden! Beide Karten sind ungefähr ' + kidSpeakPrice(d.a, d.cur) + ' wert.'; }
     var w = d.winner === 'A' ? d.ca : d.cb, l = d.winner === 'A' ? d.cb : d.ca;
     var wv = d.winner === 'A' ? d.a : d.b, lv = d.winner === 'A' ? d.b : d.a;
-    return 'Karte ' + d.winner + ' gewinnt! ' + w.name + ' ist ungefähr ' + kidSpeakPrice(wv, d.cur) + ' wert. ' + l.name + ' nur ' + kidSpeakPrice(lv, d.cur) + '.';
+    return 'Karte ' + d.winner + ' gewinnt! ' + w.name + ' ist ungefähr ' + kidSpeakPrice(wv, d.cur) + ' wert. ' + l.name + ' nur ' + kidSpeakPrice(lv, d.cur) + '. ' + kidRatioSpeech(d.ratio);
   }
 
   var HELP_TEXT = 'So geht es: Mach ein Foto von deiner Karte. Dann zieh den Rahmen genau um die Karte. ' +
@@ -3329,6 +3500,17 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   /* ---------- Änderungshistorie ---------- */
 
   var CHANGELOG = [
+    ['1.30', '21.11.2026', ['Meine Karten: Tipp aufs Bild öffnet die Großansicht – dein Foto und die gefundene Karte nebeneinander (das Foto wird ab jetzt mitgespeichert).',
+      'Sortieren nach Datum (neueste zuerst, Standard) oder Wert (auf- und absteigend); Favoriten mit 💎 markieren und filtern.',
+      'Löschen verschiebt die Karte ins Archiv. Wiederherstellen, endgültig Löschen, Sichern/Laden und „Alles löschen“ gibt es nur im Erwachsenen-Bereich.',
+      'Neuer Erwachsenen-Bereich (🔒) mit Rechenaufgabe: Einstellungen, Archiv, Sichern/Laden, KI-Status und Änderungshistorie.',
+      '30th Celebration: Das 30-Jahre-Logo (Pikachu-Symbol mit „30“) wird erkannt. Dann werden nur Treffer aus diesem Set gezeigt; fehlt die Karte dort, gibt es keinen Preis statt des Preises der Originalkarte.']],
+    ['1.29', '21.11.2026', ['Eis als echtes Bild: ein Hörnchen mit 1 bis 5 bunten Kugeln (Vanille, Schoko, Erdbeere, Pistazie, Zitrone) statt Eis-Emoji – bei der Einzelkarte, im Vergleich und in „Meine Karten“.']],
+    ['1.28', '21.11.2026', ['Gummibärchen als echte Bilder (grün, orange, rot, weiß, gelb, dunkelrot) statt Bär-Emoji: bei der Einzelkarte bis zu 5 bunte Bärchen, im Vergleich und in „Meine Karten“ ein Bärchen.']],
+    ['1.27', '21.11.2026', ['Neue Wert-Vergleiche: Gummibärchen (unter 2 €), Kugeln Eis (ab 2 €) und Kinobesuche (ab 10 €) – mit der genauen Anzahl, z. B. „25 Gummibärchen“, „2 Kugeln Eis“.',
+      'Sterne: Gummibärchen 1, Eis 2, Kino 3 (die Anzeige hat weiter 5 Sterne).',
+      'Vergleich zweier Karten: beide Werte in einer Einheit, dazu „so viel wert“ als Malnehmen („3-mal so viel“) oder „fast gleich viel“.',
+      'Dollar-Preise werden mit festem Kurs in Euro umgerechnet (1 $ = 0,9098 €, EZB 19.11.2026).']],
     ['1.26', '15.11.2026', ['Vergleich-Symbol: zwei Karten mit schrägem Strich.', 'Foto-Feld sieht aus wie eine Karte (Hochformat, verschwommenes Vulpix, Kamera darüber); „Karte A/B“-Überschrift entfernt.']],
     ['1.25', '15.11.2026', ['Neues Aussehen: dein Bild als Hintergrund, rot-weiße Knöpfe, runder Los-Knopf.', 'Startseite: 1 Karte, Vergleich, Meine Karten; Einstellungen und Änderungshistorie dort.', 'Einstellungen leuchten orange, wenn etwas fehlt.', 'Symbolleiste unter dem Titel und „Bild“-Knopf entfernt – nur noch Foto.']],
     ['1.24', '15.11.2026', ['App-Symbol schärfer (größere Vulpix-Vorlage).']],
@@ -3413,21 +3595,22 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       if (m) { m.textContent = '⚠️ Die Sammlung konnte in diesem Browser nicht gespeichert werden.'; m.className = 'status err'; }
     }
     renderColl();
+    renderArch();
     return ok;
   }
 
   function cardKey(c) { return c.id || (c.src + '|' + normTxt(c.name) + '|' + (c.setName || '') + '|' + normNum(c.number)); }
 
   /* Erkennungs-Schlüssel: Name + Nummer (+ Setgröße); ohne Nummer kein Treffer, um Verwechslungen zu vermeiden */
-  function matchKeys(names, number, total) {
+  function matchKeys(names, number, total, a30) {
     var n = normNum(number);
     if (!n) { return []; }
     var t = normNum(total);
-    var out = [];
+    var out = [], sx = a30 ? '@30' : '';
     names.forEach(function (nm) {
       nm = normTxt(nm);
       if (!nm) { return; }
-      [nm + '#' + n + '/' + t, nm + '#' + n + '/'].forEach(function (k) { if (out.indexOf(k) === -1) { out.push(k); } });
+      [nm + '#' + n + '/' + t + sx, nm + '#' + n + '/' + sx].forEach(function (k) { if (out.indexOf(k) === -1) { out.push(k); } });
     });
     return out;
   }
@@ -3438,11 +3621,12 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 
   function findInColl(info) {
     if (!info) { return null; }
-    var keys = matchKeys([info.name, info.name_en], info.number, info.printed_total);
+    var keys = matchKeys([info.name, info.name_en], info.number, info.printed_total, is30(info));
     if (!keys.length) { return null; }
     var cards = loadColl().cards, best = null;
     Object.keys(cards).forEach(function (id) {
       var r = cards[id];
+      if (r.archived) { return; }
       if (r.keys && r.keys.some(function (k) { return keys.indexOf(k) > -1; })) {
         if (!best || r.checked > best.checked) { best = r; }
       }
@@ -3455,18 +3639,21 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     var st = state[slot], c = curCard(slot);
     if (!st || !c || st.fromMemory || c.mismatch) { return; }
     var coll = loadColl(), id = cardKey(c);
-    if (st.savedId && st.savedId !== id && st.createdNew) { delete coll.cards[st.savedId]; }
+    if (st.savedId && st.savedId !== id && st.createdNew) { delete coll.cards[st.savedId]; scanDel(st.savedId); }
     var old = coll.cards[id];
     var info = st.info || {};
-    var keys = matchKeys([c.name, info.name, info.name_en], info.number || c.number, info.printed_total || c.total)
-      .concat(matchKeys([c.name], c.number, c.total));
+    var a30 = IS30_RE.test(c.setName || '');
+    var keys = matchKeys([c.name, info.name, info.name_en], info.number || c.number, info.printed_total || c.total, a30)
+      .concat(matchKeys([c.name], c.number, c.total, a30));
     if (old && old.keys) { old.keys.forEach(function (k) { if (keys.indexOf(k) === -1) { keys.push(k); } }); }
     var p = pickPrice(c.pi, st.variant);
     coll.cards[id] = {
       id: id, card: c, variant: st.variant, keys: keys,
       price: { val: p.val, cur: p.cur, src: p.src },
-      checked: Date.now(), first: old ? old.first : Date.now(), count: (old ? old.count : 0) + (st.savedId === id ? 0 : 1)
+      checked: Date.now(), first: old ? old.first : Date.now(), count: (old ? old.count : 0) + (st.savedId === id ? 0 : 1),
+      fav: !!(old && old.fav), scan: !!(lastImg[slot] || (old && old.scan))
     };
+    if (lastImg[slot]) { makeThumb(lastImg[slot].parts[0]).then(function (b) { return b ? scanPut(id, b) : false; }); }
     st.createdNew = st.savedId === id ? st.createdNew : !old;
     st.savedId = id;
     saveColl(coll);
@@ -3484,10 +3671,90 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     saveColl(coll);
   }
 
-  function forgetCard(id) {
+  /* Löschen = ins Archiv verschieben (Wiederherstellen nur im Erwachsenen-Bereich) */
+  function archiveCard(id) {
+    var coll = loadColl();
+    if (coll.cards[id]) { coll.cards[id].archived = Date.now(); }
+    saveColl(coll);
+  }
+  function restoreCard(id) {
+    var coll = loadColl();
+    if (coll.cards[id]) { delete coll.cards[id].archived; }
+    saveColl(coll);
+  }
+  function purgeCard(id) {
     var coll = loadColl();
     delete coll.cards[id];
+    scanDel(id);
     saveColl(coll);
+  }
+  function toggleFav(id) {
+    var coll = loadColl();
+    if (coll.cards[id]) { coll.cards[id].fav = !coll.cards[id].fav; }
+    saveColl(coll);
+    return coll.cards[id] && coll.cards[id].fav;
+  }
+
+  /* ---------- Scan-Fotos der Karten (IndexedDB, bleiben auf dem Gerät) ---------- */
+  var idbP = null;
+  function idb() {
+    if (idbP) { return idbP; }
+    idbP = new Promise(function (res) {
+      try {
+        if (!window.indexedDB) { res(null); return; }
+        var rq = indexedDB.open('karten-check', 1);
+        rq.onupgradeneeded = function () { rq.result.createObjectStore('scans'); };
+        rq.onsuccess = function () { res(rq.result); };
+        rq.onerror = function () { res(null); };
+      } catch (e) { res(null); }
+    });
+    return idbP;
+  }
+  function idbDo(mode, fn) {
+    return idb().then(function (db) {
+      if (!db) { return null; }
+      return new Promise(function (res) {
+        try {
+          var tx = db.transaction('scans', mode), st = tx.objectStore('scans'), out = fn(st);
+          tx.oncomplete = function () { res(out && 'result' in out ? out.result : true); };
+          tx.onerror = tx.onabort = function () { res(null); };
+        } catch (e) { res(null); }
+      });
+    });
+  }
+  function scanPut(id, blob) { return idbDo('readwrite', function (st) { st.put(blob, id); }); }
+  function scanDel(id) { return idbDo('readwrite', function (st) { st.delete(id); }); }
+  function scanClear() { return idbDo('readwrite', function (st) { st.clear(); }); }
+  function scanGet(id) { return idbDo('readonly', function (st) { return st.get(id); }); }
+  function blobToB64(blob) {
+    return new Promise(function (res) {
+      var fr = new FileReader();
+      fr.onload = function () { res(String(fr.result).split(',')[1]); };
+      fr.onerror = function () { res(null); };
+      fr.readAsDataURL(blob);
+    });
+  }
+  function scanAll(ids) {
+    var out = {};
+    return Promise.all(ids.map(function (id) {
+      return scanGet(id).then(function (b) { return b ? blobToB64(b) : null; }).then(function (b64) { if (b64) { out[id] = b64; } });
+    })).then(function () { return out; });
+  }
+  /* Verkleinertes Foto (max. 480 px) für die Großansicht */
+  function makeThumb(b64) {
+    return new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () {
+        var sc = Math.min(1, 480 / Math.max(im.naturalWidth, im.naturalHeight));
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(im.naturalWidth * sc)); c.height = Math.max(1, Math.round(im.naturalHeight * sc));
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        if (c.toBlob) { c.toBlob(function (b) { freeCanvas(c); res(b); }, 'image/jpeg', 0.75); }
+        else { res(null); }
+      };
+      im.onerror = function () { res(null); };
+      im.src = 'data:image/jpeg;base64,' + b64;
+    });
   }
 
   /* Hinweis in der Ergebniskachel */
@@ -3520,55 +3787,204 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 
   /* ---------- Sammlung anzeigen, sichern, laden ---------- */
 
-  function collList() {
+  function collList(archived) {
     var cards = loadColl().cards;
-    return Object.keys(cards).map(function (k) { return cards[k]; }).sort(function (a, b) { return b.checked - a.checked; });
+    return Object.keys(cards).map(function (k) { return cards[k]; }).filter(function (r) { return archived ? !!r.archived : !r.archived; })
+      .sort(function (a, b) { return archived ? b.archived - a.archived : b.checked - a.checked; });
+  }
+
+  var collSort = LS.get('collsort') || 'date', collFav = false;
+  function recEur(r) { return r.price && isNum(r.price.val) ? toEur(r.price.val, r.price.cur) : null; }
+
+  function sortedColl() {
+    var list = collList(false);
+    if (collFav) { list = list.filter(function (r) { return r.fav; }); }
+    if (collSort === 'val_desc' || collSort === 'val_asc') {
+      var dir = collSort === 'val_desc' ? -1 : 1;
+      list.sort(function (a, b) {
+        var x = recEur(a), y = recEur(b);
+        if (x === null && y === null) { return b.checked - a.checked; }
+        if (x === null) { return 1; }
+        if (y === null) { return -1; }
+        return x === y ? b.checked - a.checked : (x - y) * dir;
+      });
+    }
+    return list;
+  }
+
+  function kidIconEl(t) {
+    var ki = el('div', 'kicon');
+    if (!t) { ki.textContent = '🤷'; }
+    else if (t.kind === 'gummi') { for (var bi = 0; bi < t.cnt; bi++) { ki.appendChild(bearImg(bi)); } }
+    else if (t.kind === 'eis') { ki.appendChild(eisImg(t.n)); }
+    else { ki.textContent = t.row; }
+    return ki;
+  }
+
+  function renderCollBar() {
+    var bar = $('collBar');
+    if (!bar) { return; }
+    clear(bar);
+    [['date', '📅 Neueste'], ['val_desc', '💰⬇️ Wertvollste'], ['val_asc', '💰⬆️ Günstigste']].forEach(function (o) {
+      var b = el('button', collSort === o[0] ? 'on' : '', o[1]);
+      b.type = 'button';
+      b.addEventListener('click', function () { collSort = o[0]; LS.set('collsort', o[0]); renderColl(); });
+      bar.appendChild(b);
+    });
+    var f = el('button', collFav ? 'on' : '', '💎 Favoriten');
+    f.type = 'button';
+    f.addEventListener('click', function () { collFav = !collFav; renderColl(); });
+    bar.appendChild(f);
   }
 
   function renderColl() {
     var box = $('collList'), cnt = $('collCount');
     if (!box) { return; }
-    var list = collList();
-    if (cnt) { cnt.textContent = list.length ? '(' + list.length + ')' : ''; }
+    var all = collList(false), list = sortedColl();
+    if (cnt) { cnt.textContent = all.length ? '(' + all.length + ')' : ''; }
+    renderCollBar();
     clear(box);
-    if (!list.length) { box.appendChild(el('div', 'meta', 'Noch keine Karten gecheckt.')); return; }
+    if (!all.length) { box.appendChild(el('div', 'meta', 'Noch keine Karten gecheckt.')); return; }
+    if (!list.length) { box.appendChild(el('div', 'meta', 'Noch keine Favoriten – tippe bei einer Karte auf 💎.')); return; }
     var total = 0, cur = 'EUR';
+    all.forEach(function (r) { if (r.price && isNum(r.price.val) && r.price.cur === 'EUR') { total += r.price.val; } });
     list.forEach(function (r) {
       var row = el('div', 'crow' + (isStale(r) ? ' stale' : ''));
-      if (r.card && r.card.img) { var im = el('img'); im.src = r.card.img; im.alt = ''; im.loading = 'lazy'; row.appendChild(im); }
-      else { row.appendChild(el('div', 'cph', '🃏')); }
+      var ib = el('div', 'cimg');
+      if (r.card && r.card.img) { var im = el('img'); im.src = r.card.img; im.alt = ''; im.loading = 'lazy'; ib.appendChild(im); }
+      else { ib.appendChild(el('div', 'cph', '🃏')); }
+      ib.addEventListener('click', function () { openCardOv(r.id); });
+      row.appendChild(ib);
       var mid = el('div', 'cmid');
       mid.appendChild(el('div', 'cname', r.card ? r.card.name : '?'));
       mid.appendChild(el('div', 'meta', (r.card ? r.card.setName + ' · Nr. ' + r.card.number : '') + ' · ' + VNAME[r.variant || 'normal']));
       mid.appendChild(el('div', 'meta', (isStale(r) ? '⏰ ' : '📅 ') + dateDe(r.checked) + (isStale(r) ? ' – bitte neu checken' : '')));
       row.appendChild(mid);
-      var t = kidTier(r.price && r.price.val);
+      var t = kidTier(r.price && r.price.val, r.price && r.price.cur);
       var right = el('div', 'cright');
-      right.appendChild(el('div', 'cicon', t ? t.icon : '🤷'));
+      var ci = el('div', 'cicon');
+      if (t && t.kind === 'gummi') { ci.appendChild(bearImg(0)); } else if (t && t.kind === 'eis') { ci.appendChild(eisImg(t.n)); } else { ci.textContent = t ? t.icon : '🤷'; }
+      right.appendChild(ci);
       right.appendChild(el('div', 'cprice', r.price && isNum(r.price.val) ? kidPrice(r.price.val, r.price.cur) : '–'));
+      var fav = el('button', 'cfav' + (r.fav ? ' on' : ''), '💎');
+      fav.type = 'button'; fav.title = 'Favorit';
+      fav.addEventListener('click', function () { toggleFav(r.id); });
+      right.appendChild(fav);
       var del = el('button', 'cdel', '🗑️');
       del.type = 'button';
-      del.title = 'Aus der Sammlung entfernen';
-      del.addEventListener('click', function () { forgetCard(r.id); });
+      del.title = 'Ins Archiv verschieben';
+      del.addEventListener('click', function () { archiveCard(r.id); });
       right.appendChild(del);
       row.appendChild(right);
       box.appendChild(row);
-      if (r.price && isNum(r.price.val) && r.price.cur === 'EUR') { total += r.price.val; }
     });
-    var sum = el('div', 'csum', '💰 Alle Karten zusammen: ' + kidPrice(total, cur) + ' (laut letztem Check)');
-    box.appendChild(sum);
+    box.appendChild(el('div', 'csum', '💰 Alle Karten zusammen: ' + kidPrice(total, cur) + ' (laut letztem Check)'));
+  }
+
+  /* Archiv (nur Erwachsenen-Bereich) */
+  var archArm = {};
+  function renderArch() {
+    var box = $('archList'), cnt = $('archCount');
+    if (!box) { return; }
+    var list = collList(true);
+    if (cnt) { cnt.textContent = list.length ? '(' + list.length + ')' : ''; }
+    clear(box);
+    if (!list.length) { box.appendChild(el('div', 'meta', 'Das Archiv ist leer.')); return; }
+    list.forEach(function (r) {
+      var row = el('div', 'arow');
+      if (r.card && r.card.img) { var im = el('img'); im.src = r.card.img; im.alt = ''; im.loading = 'lazy'; row.appendChild(im); }
+      var mid = el('div', 'amid');
+      mid.appendChild(el('div', 'cname', (r.card ? r.card.name : '?') + (r.fav ? ' 💎' : '')));
+      mid.appendChild(el('div', 'meta', (r.card ? r.card.setName + ' · Nr. ' + r.card.number : '') + ' · archiviert am ' + dateDe(r.archived)));
+      row.appendChild(mid);
+      var rb = el('button', 'btn small green'); rb.type = 'button';
+      rb.appendChild(el('span', 'ic', '♻️')); rb.appendChild(document.createTextNode('Zurück'));
+      rb.addEventListener('click', function () { restoreCard(r.id); });
+      row.appendChild(rb);
+      var pb = el('button', 'btn small grey'); pb.type = 'button';
+      pb.appendChild(el('span', 'ic', '❌')); pb.appendChild(document.createTextNode('Endgültig'));
+      pb.addEventListener('click', function () {
+        if (Date.now() - (archArm[r.id] || 0) > 4000) { archArm[r.id] = Date.now(); pb.lastChild.textContent = 'Sicher?'; return; }
+        purgeCard(r.id);
+      });
+      row.appendChild(pb);
+      box.appendChild(row);
+    });
+  }
+
+  /* Großansicht: eigenes Foto und gefundene Karte nebeneinander */
+  var cardOvUrls = [];
+  function closeCardOv() {
+    $('cardOv').style.display = 'none';
+    cardOvUrls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* egal */ } });
+    cardOvUrls = [];
+    clear($('cardBox'));
+  }
+  function openCardOv(id) {
+    var r = loadColl().cards[id];
+    if (!r || !r.card) { return; }
+    var c = r.card, box = $('cardBox');
+    clear(box);
+    $('cardOv').style.display = 'block';
+    var top = el('div', 'fhead');
+    top.appendChild(el('h2', null, '🃏 ' + c.name));
+    var x = el('button', 'btn small grey'); x.type = 'button';
+    x.appendChild(el('span', 'ic', '✖️')); x.appendChild(document.createTextNode('Schließen'));
+    x.addEventListener('click', closeCardOv);
+    top.appendChild(x);
+    box.appendChild(top);
+    var pair = el('div', 'pair' + (r.scan ? '' : ' one'));
+    var scanFig = null;
+    if (r.scan) {
+      scanFig = el('figure');
+      var si = el('img'); si.alt = 'Dein Foto';
+      scanFig.appendChild(si);
+      scanFig.appendChild(el('figcaption', null, '📷 Dein Foto'));
+      pair.appendChild(scanFig);
+      scanGet(id).then(function (blob) {
+        if (blob) { var u = URL.createObjectURL(blob); cardOvUrls.push(u); si.src = u; }
+        else { pair.removeChild(scanFig); pair.className = 'pair one'; }
+      });
+    }
+    var ff = el('figure', 'found');
+    var fi = el('img'); fi.alt = c.name;
+    var chain = [c.imgHi, c.img].filter(function (u) { return u; }), ci = 0;
+    function nxt() { if (ci < chain.length) { fi.src = chain[ci++]; } else { fi.style.display = 'none'; } }
+    fi.onerror = nxt; nxt();
+    ff.appendChild(fi);
+    ff.appendChild(el('figcaption', null, '🗂️ Gefundene Karte'));
+    pair.appendChild(ff);
+    box.appendChild(pair);
+    if (!r.scan) { box.appendChild(el('div', 'meta', 'Zu dieser Karte ist kein eigenes Foto gespeichert (sie wurde vor Version 1.30 gecheckt oder per Hand eingegeben).')); }
+    var t = kidTier(r.price && r.price.val, r.price && r.price.cur);
+    var kid = el('div', 'kid big');
+    kid.appendChild(kidIconEl(t));
+    kid.appendChild(el('div', t ? 'kprice' : 'kprice none', t ? kidPrice(r.price.val, r.price.cur) : 'Kein Preis'));
+    if (t) { kid.appendChild(el('div', 'kword', 'So viel wie ' + t.word)); }
+    box.appendChild(kid);
+    box.appendChild(el('div', 'meta', '📦 ' + (c.setName || '?') + ' · Nr. ' + c.number + (c.total ? '/' + c.total : '') + (c.rarity ? ' · ⭐ ' + c.rarity : '') + ' · ' + VNAME[r.variant || 'normal']));
+    box.appendChild(el('div', 'meta', (isStale(r) ? '⏰ Alter Preis vom ' : '📅 Gecheckt am ') + dateDe(r.checked) + (isStale(r) ? ' – bitte neu checken' : '')));
+    var fb = el('button', 'btn small ' + (r.fav ? 'yellow' : 'grey')); fb.type = 'button';
+    fb.appendChild(el('span', 'ic', '💎')); var ft = document.createTextNode(r.fav ? 'Favorit' : 'Zu Favoriten');
+    fb.appendChild(ft);
+    fb.addEventListener('click', function () { var on = toggleFav(id); ft.textContent = on ? 'Favorit' : 'Zu Favoriten'; fb.className = 'btn small ' + (on ? 'yellow' : 'grey'); });
+    var br = el('div', 'btns'); br.appendChild(fb);
+    box.appendChild(br);
   }
 
   function exportColl() {
-    var data = JSON.stringify({ app: 'Karten-Check', version: APP_VERSION, exportiert: new Date().toISOString(), sammlung: loadColl() });
-    var name = 'karten-sammlung_' + stampOf(new Date()) + '.json';
-    var file = null;
-    try { file = new File([data], name, { type: 'application/json' }); } catch (e) { file = null; }
-    if (file && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
-      navigator.share({ files: [file], title: 'Karten-Sammlung' }).then(function () { collMsg('✅ Sammlung übergeben.'); }, function () { downloadBlob(new Blob([data], { type: 'application/json' }), name); });
-      return;
-    }
-    downloadBlob(new Blob([data], { type: 'application/json' }), name);
+    var coll = loadColl(), ids = Object.keys(coll.cards).filter(function (k) { return coll.cards[k].scan; });
+    scanAll(ids).then(function (scans) {
+      var data = JSON.stringify({ app: 'Karten-Check', version: APP_VERSION, exportiert: new Date().toISOString(), sammlung: coll, scans: scans });
+      var name = 'karten-sammlung_' + stampOf(new Date()) + '.json';
+      var file = null;
+      try { file = new File([data], name, { type: 'application/json' }); } catch (e) { file = null; }
+      if (file && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: 'Karten-Sammlung' }).then(function () { collMsg('✅ Sammlung übergeben.'); }, function () { downloadBlob(new Blob([data], { type: 'application/json' }), name); });
+        return;
+      }
+      downloadBlob(new Blob([data], { type: 'application/json' }), name);
+    });
   }
 
   function downloadBlob(blob, name) {
@@ -3592,6 +4008,10 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
         Object.keys(inc).forEach(function (id) {
           var r = inc[id];
           if (!coll.cards[id] || coll.cards[id].checked < r.checked) { coll.cards[id] = r; n++; }
+        });
+        var sc = (o && o.scans) || {};
+        Object.keys(sc).forEach(function (id) {
+          if (coll.cards[id]) { coll.cards[id].scan = true; scanPut(id, new Blob([b64ToU8(sc[id])], { type: 'image/jpeg' })); }
         });
         saveColl(coll);
         collMsg('✅ ' + n + ' Karte(n) übernommen.');
@@ -3839,7 +4259,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     });
   }
 
-  var VOICE_SAMPLE = 'Hallo! Deine Karte ist dreiundsechzig Cent wert. Das ist so viel wie ein Eis.';
+  var VOICE_SAMPLE = 'Hallo! Deine Karte ist dreiundsechzig Cent wert. Das ist so viel wie fünfundzwanzig Gummibärchen.';
 
   function initVoice() {
     if (!window.speechSynthesis) { return; }
@@ -4114,7 +4534,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   var clrArmed = 0;
   $('collClr').addEventListener('click', function () {
     if (Date.now() - clrArmed > 4000) { clrArmed = Date.now(); collMsg('Wirklich alles löschen? Zum Bestätigen innerhalb von 4 Sekunden noch mal tippen.', true); return; }
-    saveColl({ cards: {} }); collMsg('Sammlung gelöscht.');
+    scanClear(); saveColl({ cards: {} }); collMsg('Sammlung und Archiv gelöscht.');
   });
   $('repCopy').addEventListener('click', copyReport);
   renderHealth();
@@ -4128,7 +4548,18 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   tap('goOne', function () { openInput(1); });
   tap('goTwo', function () { openInput(2); });
   tap('goColl', function () { showScreen('coll'); });
-  tap('goSet', function () { showScreen('set'); });
+  tap('goSet', function () { showScreen('adult'); });
+  $('gateGo').addEventListener('click', tryGate);
+  $('gateIn').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); tryGate(); } });
+  $('adultLock').addEventListener('click', function () { adultOk = false; showScreen('start'); });
+  $('archClr').addEventListener('click', function () {
+    var n = collList(true);
+    if (!n.length) { return; }
+    if (Date.now() - (archArm.all || 0) > 4000) { archArm.all = Date.now(); $('archClr').lastChild.textContent = 'Sicher? Nochmal tippen'; return; }
+    archArm.all = 0; $('archClr').lastChild.textContent = 'Archiv leeren';
+    var coll = loadColl(); n.forEach(function (r) { delete coll.cards[r.id]; scanDel(r.id); }); saveColl(coll);
+  });
+  $('cardOv').addEventListener('click', function (ev) { if (ev.target === $('cardOv')) { closeCardOv(); } });
   $('homeBtn').addEventListener('click', function () { if (screen === 'in') { newCompare(); } else { showScreen('start'); } });
   $('saveSettings').addEventListener('click', function () { updSetWarn(); });
   if (screen !== 'set') { showScreen('start'); }
