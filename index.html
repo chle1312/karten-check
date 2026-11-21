@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karten-Check v1.30</title>
+<title>Karten-Check v1.33</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -209,6 +209,18 @@
   .gate { text-align: center; background: rgba(255,255,255,.93); border: 4px solid #1f2a44; border-radius: 26px; padding: 14px; box-shadow: 0 6px 0 rgba(31,42,68,.35); } .gate .gq { font-size: 1.9rem; font-weight: 900; margin: 14px 0; color: #1d4ed8; }
   .gate input { max-width: 220px; text-align: center; font-size: 1.5rem; margin: 0 auto 10px; display: block; }
   .adulttop { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .abtns { display: flex; flex-wrap: wrap; gap: 6px; } .arow { flex-wrap: wrap; }
+  .rvt { width: 100%; border-collapse: collapse; font-size: .92rem; } .rvt td, .rvt th { padding: 6px 4px; border-bottom: 2px dashed #e2e8f0; vertical-align: top; text-align: left; }
+  .rvt .num { text-align: right; white-space: nowrap; } .rvt .up { color: #166534; font-weight: 900; } .rvt .dn { color: #b91c1c; font-weight: 900; }
+  .rflag { display: inline-block; margin: 2px 4px 0 0; padding: 1px 8px; border-radius: 999px; background: #fef3c7; color: #92400e; font-size: .8rem; font-weight: 800; } .rflag.bad { background: #fee2e2; color: #991b1b; }
+  .rvt input[type=checkbox] { width: 24px; height: 24px; }
+  .tfbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+  .tfbar button { border: 3px solid #1f2a44; background: #fff; border-radius: 999px; padding: 5px 10px; font-family: inherit; font-weight: 800; font-size: .9rem; cursor: pointer; color: #1e293b; }
+  .tfbar button.on { background: #86efac; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18); }
+  .stile .si.art { background: none; border: 0; width: auto; height: auto; transform: translate(-50%, -66%); display: flex; align-items: center; justify-content: center; }
+  .stile .si.art img { height: 150px; width: auto; border: 3px solid #111; border-radius: 8px; background: #fff; box-shadow: 0 5px 0 rgba(17,17,17,.45); }
+  .stile .si.art.two img { height: 128px; } .stile .si.art.two img:first-child { transform: rotate(-9deg); margin-right: -26px; } .stile .si.art.two img:last-child { transform: rotate(9deg); }
+  .stile .si.art.one img { transform: rotate(-4deg); }
   .arow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 2px dashed #e2e8f0; } .arow img { width: 44px; border-radius: 5px; } .arow .amid { flex: 1; min-width: 0; }
   details.adult { margin-top: 14px; text-align: left; }
   details.cmp > summary { font-weight: 800; cursor: pointer; }
@@ -319,7 +331,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   <div class="hero">
     <div class="logo">🃏✨💰</div>
     <h1>Karten-Check</h1>
-    <div class="ver">Version 1.30 · 21.11.2026</div>
+    <div class="ver">Version 1.33 · 21.11.2026</div>
   </div>
 
   <div id="scrStart" class="scr">
@@ -402,10 +414,25 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     <div class="status" id="settingsMsg"></div>
     <div id="diag" style="font-size:.95rem;line-height:1.45;margin-top:6px"></div>
   </details>
+      <details class="box" id="revBox">
+        <summary>🔄 Sammlung neu bewerten</summary>
+        <div class="meta" id="revInfo"></div>
+        <div class="meta">Holt für jede Karte frische Preise aus der Datenbank. Danach siehst du eine Auswertung und entscheidest je Karte, ob der neue Wert übernommen wird.</div>
+        <label class="meta" style="display:block;margin:8px 0"><input type="checkbox" id="revDeep"> 🔬 Auch Karten mit Foto neu erkennen (die KI liest das gespeicherte Foto im Gründlich-Modus und sucht die Karte neu; dauert pro Karte bis zu einer Minute)</label>
+        <div class="btns"><button type="button" class="btn green" id="revGo"><span class="ic">🔄</span>Neu bewerten</button><button type="button" class="btn small grey" id="revStop" style="display:none"><span class="ic">⏹️</span>Abbrechen</button></div>
+        <div class="status" id="revProg"></div>
+      </details>
+      <details class="box" id="mgBox">
+        <summary>🛡️ Karten prüfen &amp; Berichte <span id="mgCount"></span></summary>
+        <div class="meta">Echtheit aus dem gespeicherten Foto neu bewerten (Vergleich mit der gefundenen Karte) und einen verschlüsselten Bericht zu einer Karte an Claude senden.</div>
+        <div id="mgList"></div>
+        <div class="status mgmsg"></div>
+      </details>
       <details class="box" id="archBox">
         <summary>🗄️ Archiv (gelöschte Karten) <span id="archCount"></span></summary>
         <div class="meta">Karten, die in „Meine Karten“ gelöscht wurden. Hier kannst du sie wiederherstellen.</div>
         <div id="archList"></div>
+        <div class="status mgmsg"></div>
         <div class="btns" style="margin-top:8px"><button type="button" class="btn small grey" id="archClr"><span class="ic">🧹</span>Archiv leeren</button></div>
       </details>
       <details class="box" id="backupBox">
@@ -482,6 +509,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 </div>
 
 <div class="ov light" id="fakeOv" style="display:none;z-index:9"><div class="fbox" id="fakeBox"></div></div>
+<div class="ov light" id="advOv" style="display:none;z-index:9"><div class="fbox" id="advBox"></div></div>
 <div class="ov light" id="cardOv" style="display:none;z-index:9"><div class="fbox" id="cardBox"></div></div>
 
 <div class="ov" id="cropOv" style="display:none">
@@ -503,7 +531,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 (function () {
   'use strict';
 
-  var APP_VERSION = '1.30';
+  var APP_VERSION = '1.33';
   var REPORT_MAIL = '';
 
   /* ===== Eingebauter Gemini-Schlüssel (nur private Nutzung, Datei nicht weitergeben) ===== */
@@ -985,6 +1013,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       number: card.number,
       total: card.set ? card.set.printedTotal : '',
       rarity: card.rarity || '',
+      types: isArr(card.types) ? card.types.slice() : [],
       img: card.images && card.images.small,
       pi: {
         trend: posP(p.trendPrice), low: posP(p.lowPrice), avg7: posP(p.avg7), avg30: posP(p.avg30),
@@ -1027,6 +1056,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       number: card.localId,
       total: cc.official || '',
       rarity: card.rarity || '',
+      types: isArr(card.types) ? card.types.slice() : [],
       img: card.image ? card.image + '/low.png' : '',
       pi: {
         trend: trend, low: posP(cm.low), avg7: posP(cm.avg7), avg30: posP(cm.avg30),
@@ -1399,11 +1429,12 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   var adultOk = false, adultQ = null;
   function ri(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
   function newAdultQ() {
-    var t = ri(0, 3), q, a;
-    if (t === 0) { var x = ri(13, 29), y = ri(7, 19), z = ri(20, Math.min(99, x * y - 10)); q = '(' + x + ' × ' + y + ') − ' + z + ' = ?'; a = x * y - z; }
-    else if (t === 1) { var pc = [15, 35, 45, 65, 85][ri(0, 4)], n = 20 * ri(6, 30); q = 'Wie viel sind ' + pc + ' % von ' + n + '?'; a = pc * n / 100; }
-    else if (t === 2) { var k = ri(3, 9), x2 = ri(6, 25), b = ri(5, 40); q = k + ' · x + ' + b + ' = ' + (k * x2 + b) + '  –  Wie groß ist x?'; a = x2; }
-    else { var u = ri(13, 30), v = ri(5, u - 4); q = u + '² − ' + v + '² = ?'; a = u * u - v * v; }
+    var t = ri(0, 4), q, a;
+    if (t === 0) { var r = ri(4, 15); q = '√' + (r * r) + ' = ?'; a = r; }
+    else if (t === 1) { var x = ri(6, 9) + ri(0, 1) * ri(6, 8), y = ri(12, 19); q = x + ' × ' + y + ' = ?'; a = x * y; }
+    else if (t === 2) { var b = ri(3, 9), c = ri(4, 9), d = ri(11, 49); q = d + ' + ' + b + ' × ' + c + ' = ?'; a = d + b * c; }
+    else if (t === 3) { var e = ri(3, 9), f = ri(4, 9), g = ri(3, 9), h = ri(4, 9); q = e + ' × ' + f + ' + ' + g + ' × ' + h + ' = ?'; a = e * f + g * h; }
+    else { var k = ri(3, 9), m = ri(2, 9), n = ri(5, 9); q = '(' + k + ' + ' + m + ') × ' + n + ' = ?'; a = (k + m) * n; }
     adultQ = { q: q, a: a };
     $('gateQ').textContent = q;
     $('gateIn').value = '';
@@ -1433,8 +1464,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     $('scrAdult').style.display = which === 'adult' ? 'block' : 'none';
     $('homeBar').style.display = (which === 'in' || which === 'coll' || which === 'adult') ? 'block' : 'none';
     if (which === 'adult') { renderAdult(); }
-    if (which === 'coll') { $('collBox').open = true; renderColl(); }
-    if (which === 'start') { updSetWarn(); }
+    if (which === 'coll') { $('collBox').open = true; renderColl(); fillTypes(); }
+    if (which === 'start') { updSetWarn(); startArt(); }
     try { window.scrollTo(0, 0); } catch (e) { /* egal */ }
   }
 
@@ -3500,6 +3531,13 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   /* ---------- Änderungshistorie ---------- */
 
   var CHANGELOG = [
+    ['1.33', '21.11.2026', ['Meine Karten: nach Typ filtern (Pflanze, Feuer, Wasser, Elektro, Psycho, Kampf, Finsternis, Metall, Drache, Fee, Farblos, Sonstige). Der Typ wird bei neuen Karten gleich gespeichert, bei älteren im Hintergrund nachgeladen.',
+      'Startbildschirm: statt Symbolen zeigen „1 Karte“ und „Vergleich“ echte Karten aus deiner Sammlung (Bilder aus der Datenbank), bei jedem Neuladen zufällig andere.']],
+    ['1.32', '21.11.2026', ['Erwachsenen-Bereich: „Sammlung neu bewerten“ – frische Preise für alle Karten (optional auch Karten mit Foto neu erkennen, Gründlich-Modus), danach Auswertung mit Alt/Neu je Karte; alles ist vorausgewählt, einzelne Karten lassen sich abwählen, dann „Ausgewählte übernehmen“.',
+      'Echtheit je Karte neu bewerten: gespeichertes Foto gegen die gefundene Karte (Datenbankbild), mit Erkennung von Nummer, 30-Jahre-Logo und Abweichungen; Ergebnis wird an der Karte gemerkt.',
+      'Bericht zu einer einzelnen Karte (mit Foto und Referenzbild) verschlüsselt an die Ablage senden – auch aus dem Archiv heraus.',
+      'Fotos für die Großansicht werden jetzt in höherer Auflösung (bis 1000 px) gespeichert, damit die KI sie später lesen kann.']],
+    ['1.31', '21.11.2026', ['Rechenaufgabe im Erwachsenen-Bereich leichter und schneller zu lösen: Wurzeln (√144), hohe Einmaleins-Aufgaben (13 × 14) und Mischaufgaben mit Plus und Mal (z. B. 3 × 7 + 5 × 8).']],
     ['1.30', '21.11.2026', ['Meine Karten: Tipp aufs Bild öffnet die Großansicht – dein Foto und die gefundene Karte nebeneinander (das Foto wird ab jetzt mitgespeichert).',
       'Sortieren nach Datum (neueste zuerst, Standard) oder Wert (auf- und absteigend); Favoriten mit 💎 markieren und filtern.',
       'Löschen verschiebt die Karte ins Archiv. Wiederherstellen, endgültig Löschen, Sichern/Laden und „Alles löschen“ gibt es nur im Erwachsenen-Bereich.',
@@ -3745,11 +3783,11 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     return new Promise(function (res) {
       var im = new Image();
       im.onload = function () {
-        var sc = Math.min(1, 480 / Math.max(im.naturalWidth, im.naturalHeight));
+        var sc = Math.min(1, 1000 / Math.max(im.naturalWidth, im.naturalHeight));
         var c = document.createElement('canvas');
         c.width = Math.max(1, Math.round(im.naturalWidth * sc)); c.height = Math.max(1, Math.round(im.naturalHeight * sc));
         c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-        if (c.toBlob) { c.toBlob(function (b) { freeCanvas(c); res(b); }, 'image/jpeg', 0.75); }
+        if (c.toBlob) { c.toBlob(function (b) { freeCanvas(c); res(b); }, 'image/jpeg', 0.8); }
         else { res(null); }
       };
       im.onerror = function () { res(null); };
@@ -3799,6 +3837,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   function sortedColl() {
     var list = collList(false);
     if (collFav) { list = list.filter(function (r) { return r.fav; }); }
+    if (collType) { list = list.filter(function (r) { return typeKeys(r.card).indexOf(collType) > -1; }); }
     if (collSort === 'val_desc' || collSort === 'val_asc') {
       var dir = collSort === 'val_desc' ? -1 : 1;
       list.sort(function (a, b) {
@@ -3821,9 +3860,62 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     return ki;
   }
 
+  /* Kartentypen (mehrsprachige Datenbanknamen auf deutsche Gruppen abbilden) */
+  var TYPES = [['pflanze', '🌿 Pflanze', /grass|pflanze|plante|planta|erba|plant/i], ['feuer', '🔥 Feuer', /fire|feuer|feu|fuego|fuoco|vuur/i],
+    ['wasser', '💧 Wasser', /water|wasser|eau|agua|acqua|woda|vloeistof/i], ['elektro', '⚡ Elektro', /lightning|elektro|electr|foudre|rayo|lampo|blitz/i],
+    ['psycho', '🔮 Psycho', /psychic|psycho|psy|psiquico|psichico/i], ['kampf', '👊 Kampf', /fighting|kampf|combat|lucha|lotta|fight/i],
+    ['finsternis', '🌑 Finsternis', /dark|finster|obscur|siniestr|oscur|duister/i], ['metall', '⚙️ Metall', /metal|acier|acero|acciaio|staal/i],
+    ['drache', '🐉 Drache', /dragon|drache|drago|draak/i], ['fee', '🧚 Fee', /fairy|fee|hada|folletto|fe\b/i], ['farblos', '⚪ Farblos', /colorless|farblos|incolore|incoloro|incolor|kleurloos/i]];
+  function typeKeys(card) {
+    var out = [];
+    ((card && isArr(card.types)) ? card.types : []).forEach(function (t) {
+      for (var i = 0; i < TYPES.length; i++) { if (TYPES[i][2].test(String(t))) { if (out.indexOf(TYPES[i][0]) === -1) { out.push(TYPES[i][0]); } return; } }
+    });
+    return out.length ? out : ['sonstige'];
+  }
+  var collType = '', typeFilling = false;
+  function typeRows() { return collList(false).filter(function (r) { return r.card && !isArr(r.card.types) && /^(dex|ptcg):/.test(r.card.id || ''); }); }
+  /* Fehlende Typen bei älteren Karten im Hintergrund nachladen (ohne KI) */
+  function fillTypes() {
+    if (typeFilling) { return; }
+    var todo = typeRows();
+    if (!todo.length) { return; }
+    typeFilling = true;
+    var i = 0, got = {};
+    function one() {
+      if (i >= todo.length) {
+        var coll = loadColl();
+        Object.keys(got).forEach(function (id) { if (coll.cards[id] && coll.cards[id].card) { coll.cards[id].card.types = got[id]; } });
+        typeFilling = false;
+        if (Object.keys(got).length) { saveColl(coll); }
+        return;
+      }
+      var r = todo[i++];
+      refreshCardData(r).then(function (n) { if (n) { got[r.id] = n.types || []; } }, function () { /* später wieder */ }).then(function () { setTimeout(one, 150); });
+    }
+    one();
+  }
+
   function renderCollBar() {
     var bar = $('collBar');
     if (!bar) { return; }
+    var tb = $('typeBar');
+    if (!tb) { tb = el('div', 'tfbar'); tb.id = 'typeBar'; bar.parentNode.insertBefore(tb, bar.nextSibling); }
+    clear(tb);
+    var have = {};
+    collList(false).forEach(function (r) { typeKeys(r.card).forEach(function (k) { have[k] = (have[k] || 0) + 1; }); });
+    if (collType && !have[collType]) { collType = ''; }
+    var opts = TYPES.concat([['sonstige', '🃏 Sonstige (Trainer, Energie)', null]]).filter(function (t) { return have[t[0]]; });
+    if (opts.length > 1) {
+      var all = el('button', collType ? '' : 'on', 'Alle Typen'); all.type = 'button';
+      all.addEventListener('click', function () { collType = ''; renderColl(); });
+      tb.appendChild(all);
+      opts.forEach(function (t) {
+        var b = el('button', collType === t[0] ? 'on' : '', t[1] + ' ' + have[t[0]]); b.type = 'button';
+        b.addEventListener('click', function () { collType = collType === t[0] ? '' : t[0]; renderColl(); });
+        tb.appendChild(b);
+      });
+    }
     clear(bar);
     [['date', '📅 Neueste'], ['val_desc', '💰⬇️ Wertvollste'], ['val_asc', '💰⬆️ Günstigste']].forEach(function (o) {
       var b = el('button', collSort === o[0] ? 'on' : '', o[1]);
@@ -3845,7 +3937,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     renderCollBar();
     clear(box);
     if (!all.length) { box.appendChild(el('div', 'meta', 'Noch keine Karten gecheckt.')); return; }
-    if (!list.length) { box.appendChild(el('div', 'meta', 'Noch keine Favoriten – tippe bei einer Karte auf 💎.')); return; }
+    if (!list.length) { box.appendChild(el('div', 'meta', collFav || collType ? 'Keine Karten für diese Auswahl.' : 'Noch keine Favoriten – tippe bei einer Karte auf 💎.')); return; }
     var total = 0, cur = 'EUR';
     all.forEach(function (r) { if (r.price && isNum(r.price.val) && r.price.cur === 'EUR') { total += r.price.val; } });
     list.forEach(function (r) {
@@ -3881,34 +3973,398 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     box.appendChild(el('div', 'csum', '💰 Alle Karten zusammen: ' + kidPrice(total, cur) + ' (laut letztem Check)'));
   }
 
-  /* Archiv (nur Erwachsenen-Bereich) */
+  /* Archiv und Kartenverwaltung (nur Erwachsenen-Bereich) */
   var archArm = {};
-  function renderArch() {
-    var box = $('archList'), cnt = $('archCount');
-    if (!box) { return; }
-    var list = collList(true);
-    if (cnt) { cnt.textContent = list.length ? '(' + list.length + ')' : ''; }
-    clear(box);
-    if (!list.length) { box.appendChild(el('div', 'meta', 'Das Archiv ist leer.')); return; }
-    list.forEach(function (r) {
-      var row = el('div', 'arow');
-      if (r.card && r.card.img) { var im = el('img'); im.src = r.card.img; im.alt = ''; im.loading = 'lazy'; row.appendChild(im); }
-      var mid = el('div', 'amid');
-      mid.appendChild(el('div', 'cname', (r.card ? r.card.name : '?') + (r.fav ? ' 💎' : '')));
-      mid.appendChild(el('div', 'meta', (r.card ? r.card.setName + ' · Nr. ' + r.card.number : '') + ' · archiviert am ' + dateDe(r.archived)));
-      row.appendChild(mid);
+  function mgMsg(t, err) {
+    [].slice.call(document.querySelectorAll('.mgmsg')).forEach(function (m) { m.textContent = t; m.className = 'status mgmsg' + (err ? ' err' : ''); });
+  }
+
+  function adultRow(r, arch) {
+    var row = el('div', 'arow');
+    if (r.card && r.card.img) { var im = el('img'); im.src = r.card.img; im.alt = ''; im.loading = 'lazy'; row.appendChild(im); }
+    var mid = el('div', 'amid');
+    mid.appendChild(el('div', 'cname', (r.card ? r.card.name : '?') + (r.fav ? ' 💎' : '')));
+    mid.appendChild(el('div', 'meta', (r.card ? r.card.setName + ' · Nr. ' + r.card.number : '') + (arch ? ' · archiviert am ' + dateDe(r.archived) : '') + (r.scan ? ' · 📷 Foto' : ' · ohne Foto')));
+    if (r.auth) { mid.appendChild(el('div', 'meta', '🛡️ ' + DEEP_LABEL[r.auth.state] + ' (' + dateDe(r.auth.date) + ')')); }
+    row.appendChild(mid);
+    var bt = el('div', 'abtns');
+    var b1 = el('button', 'btn small' + (r.scan ? '' : ' grey')); b1.type = 'button';
+    b1.appendChild(el('span', 'ic', '🛡️')); b1.appendChild(document.createTextNode('Echtheit'));
+    b1.addEventListener('click', function () { startReauth(r.id); });
+    bt.appendChild(b1);
+    var b2 = el('button', 'btn small purple'); b2.type = 'button';
+    b2.appendChild(el('span', 'ic', '📮')); b2.appendChild(document.createTextNode('Bericht'));
+    b2.addEventListener('click', function () { sendCardReport(r.id); });
+    bt.appendChild(b2);
+    if (arch) {
       var rb = el('button', 'btn small green'); rb.type = 'button';
       rb.appendChild(el('span', 'ic', '♻️')); rb.appendChild(document.createTextNode('Zurück'));
       rb.addEventListener('click', function () { restoreCard(r.id); });
-      row.appendChild(rb);
+      bt.appendChild(rb);
       var pb = el('button', 'btn small grey'); pb.type = 'button';
       pb.appendChild(el('span', 'ic', '❌')); pb.appendChild(document.createTextNode('Endgültig'));
       pb.addEventListener('click', function () {
         if (Date.now() - (archArm[r.id] || 0) > 4000) { archArm[r.id] = Date.now(); pb.lastChild.textContent = 'Sicher?'; return; }
         purgeCard(r.id);
       });
-      row.appendChild(pb);
-      box.appendChild(row);
+      bt.appendChild(pb);
+    }
+    row.appendChild(bt);
+    return row;
+  }
+
+  function renderArch() {
+    var box = $('archList'), cnt = $('archCount');
+    if (!box) { return; }
+    var list = collList(true);
+    if (cnt) { cnt.textContent = list.length ? '(' + list.length + ')' : ''; }
+    clear(box);
+    if (!list.length) { box.appendChild(el('div', 'meta', 'Das Archiv ist leer.')); }
+    list.forEach(function (r) { box.appendChild(adultRow(r, true)); });
+    var mg = $('mgList'), all = collList(false), mc = $('mgCount');
+    if (mc) { mc.textContent = all.length ? '(' + all.length + ')' : ''; }
+    if (mg) {
+      clear(mg);
+      if (!all.length) { mg.appendChild(el('div', 'meta', 'Noch keine Karten in der Sammlung.')); }
+      all.forEach(function (r) { mg.appendChild(adultRow(r, false)); });
+    }
+    var ri2 = $('revInfo');
+    if (ri2) { ri2.textContent = all.length + ' Karten in der Sammlung, davon ' + all.filter(function (r) { return r.scan; }).length + ' mit gespeichertem Foto.'; }
+  }
+
+  function scanB64(id) { return scanGet(id).then(function (b) { return b ? blobToB64(b) : null; }); }
+  function fitVar(c, v) {
+    if (!c || !c.avail || c.avail[v]) { return v; }
+    return c.avail.holo ? 'holo' : c.avail.normal ? 'normal' : c.avail.reverse ? 'reverse' : v;
+  }
+  function withDeep(fn) {
+    var old = searchMode; searchMode = 'deep';
+    var done = function () { searchMode = old; };
+    return fn().then(function (r) { done(); return r; }, function (e) { done(); throw e; });
+  }
+
+  /* ---------- Overlay für Auswertungen ---------- */
+  function openAdv() { clear($('advBox')); $('advOv').style.display = 'block'; }
+  function closeAdv() { $('advOv').style.display = 'none'; clear($('advBox')); }
+  function advHead(title) {
+    var top = el('div', 'fhead');
+    top.appendChild(el('h2', null, title));
+    var x = el('button', 'btn small grey'); x.type = 'button';
+    x.appendChild(el('span', 'ic', '✖️')); x.appendChild(document.createTextNode('Schließen'));
+    x.addEventListener('click', closeAdv);
+    top.appendChild(x);
+    return top;
+  }
+
+  /* ---------- Sammlung neu bewerten ---------- */
+  var rev = { running: false, stop: false };
+
+  function refreshCardData(rec) {
+    var c = rec.card || {}, id = c.id || '';
+    if (/^dex:/.test(id)) {
+      var lang = c.lang || 'en';
+      return fetchJson(DEX + lang + '/cards/' + encodeURIComponent(id.slice(4)), {}, 30000, 'Kartendatenbank TCGdex').then(function (j) {
+        if (!j || !j.name) { return null; }
+        var n = normDex(j); n.lang = c.lang || ''; n.img = n.img || c.img; n.imgHi = n.imgHi || c.imgHi;
+        return n;
+      });
+    }
+    if (/^ptcg:/.test(id)) {
+      return fetchJson('https://api.pokemontcg.io/v2/cards/' + encodeURIComponent(id.slice(5)), {}, 40000, 'Preisdienst pokemontcg.io').then(function (j) {
+        return j && j.data ? normPtcg(j.data) : null;
+      });
+    }
+    return Promise.resolve(null);
+  }
+
+  function reidentify(rec) {
+    return scanB64(rec.id).then(function (b64) {
+      if (!b64) { throw new Error('Das gespeicherte Foto fehlt.'); }
+      return withDeep(function () { return identify([b64], null, slotLogger('R')); }).then(function (info) {
+        return runSearch('R', info).then(function (list) { return { info: info, list: list }; });
+      });
+    });
+  }
+
+  function judgeRev(it) {
+    var r = it.r, nw = it.nw;
+    it.flags = [];
+    it.oldEur = recEur(r);
+    it.newEur = null; it.sel = false;
+    if (it.err) { it.flags.push({ t: '❌ ' + it.err, bad: true }); return; }
+    if (!nw) { return; }
+    var pr = nw.price;
+    it.newEur = isNum(pr.val) ? toEur(pr.val, pr.cur) : null;
+    if (it.changed) { it.flags.push({ t: '🔄 Anders erkannt: ' + nw.card.name + ' · ' + (nw.card.setName || '?') + ' · ' + nw.card.number }); }
+    if (nw.card.mismatch) { it.flags.push({ t: nw.card.anniv ? '🎉 30th-Karte nicht in der Datenbank' : '🤔 nur andere Ausgabe gefunden', bad: true }); }
+    if (it.newEur === null) { it.flags.push({ t: '🤷 kein Preis', bad: true }); }
+    if (it.newEur !== null && it.oldEur !== null && it.oldEur > 0 && Math.abs(it.newEur - it.oldEur) / it.oldEur > 0.5) { it.flags.push({ t: '⚠️ über 50 % Veränderung' }); }
+    it.sel = it.newEur !== null && !nw.card.mismatch;
+  }
+
+  function startReval() {
+    if (rev.running) { return; }
+    var deep = $('revDeep').checked, list = collList(false), prog = $('revProg');
+    if (!list.length) { prog.textContent = 'Die Sammlung ist leer.'; prog.className = 'status err'; return; }
+    if (deep && !getKey()) { prog.textContent = 'Für die Neu-Erkennung fehlt der Gemini-Schlüssel (Einstellungen).'; prog.className = 'status err'; return; }
+    rev.running = true; rev.stop = false;
+    $('revGo').disabled = true; $('revStop').style.display = '';
+    prog.className = 'status';
+    var items = [], i = 0;
+    function next() {
+      if (rev.stop || i >= list.length) { finish(); return; }
+      var r = list[i++];
+      prog.textContent = '⏳ Karte ' + i + ' von ' + list.length + ': ' + (r.card ? r.card.name : '?') + (deep && r.scan ? ' (wird neu erkannt)' : '');
+      var it = { r: r, nw: null, err: '', changed: false, sel: false, flags: [] };
+      var job;
+      if (deep && r.scan) {
+        job = reidentify(r).then(function (x) {
+          var c = x.list[0];
+          var v = fitVar(c, normVariant(x.info.variant));
+          it.nw = { card: c, variant: v, info: x.info, price: pickPrice(c.pi, v) };
+          it.changed = cardKey(c) !== r.id;
+        });
+      } else {
+        job = refreshCardData(r).then(function (c) {
+          if (!c) { throw new Error('Karte in der Datenbank nicht mehr abrufbar'); }
+          var v = fitVar(c, r.variant || 'normal');
+          it.nw = { card: c, variant: v, info: null, price: pickPrice(c.pi, v) };
+        });
+      }
+      job.catch(function (e) { it.err = niceError(e); it.nw = null; }).then(function () { judgeRev(it); items.push(it); setTimeout(next, 0); });
+    }
+    function finish() {
+      var stopped = rev.stop;
+      rev.running = false; $('revGo').disabled = false; $('revStop').style.display = 'none';
+      prog.textContent = stopped ? '⏹️ Abgebrochen – ' + items.length + ' Karten ausgewertet.' : '✅ Fertig – ' + items.length + ' Karten ausgewertet.';
+      if (items.length) { showRevResult(items); }
+    }
+    next();
+  }
+
+  function sumSel(items) {
+    var a = 0, b = 0, n = 0;
+    items.forEach(function (it) { if (it.sel) { n++; a += it.oldEur || 0; b += it.newEur || 0; } });
+    return { n: n, a: a, b: b };
+  }
+
+  function showRevResult(items) {
+    openAdv();
+    var box = $('advBox');
+    box.appendChild(advHead('🔄 Auswertung: Sammlung neu bewertet'));
+    items.sort(function (x, y) {
+      var fx = x.flags.length ? 1 : 0, fy = y.flags.length ? 1 : 0;
+      if (fx !== fy) { return fy - fx; }
+      var dx = x.oldEur !== null && x.newEur !== null ? Math.abs(x.newEur - x.oldEur) : 0, dy = y.oldEur !== null && y.newEur !== null ? Math.abs(y.newEur - y.oldEur) : 0;
+      return dy - dx;
+    });
+    var sum = el('div', 'fnote');
+    box.appendChild(sum);
+    box.appendChild(el('div', 'meta', 'Alles mit Neuwert ist vorausgewählt. Häkchen entfernen = alter Wert bleibt. Karten ohne Preis oder mit Fehler sind nicht vorausgewählt.'));
+    var tb = el('table', 'rvt');
+    var hd = el('tr');
+    ['✔', 'Karte', 'Alt → Neu', ''].forEach(function (h) { hd.appendChild(el('th', null, h)); });
+    tb.appendChild(hd);
+    var applyBtn;
+    function upd() {
+      var t = sumSel(items);
+      sum.textContent = t.n + ' von ' + items.length + ' Karten ausgewählt · Summe alt ' + fmt(t.a, 'EUR') + ' → neu ' + fmt(t.b, 'EUR') +
+        (t.a > 0 ? ' (' + (t.b >= t.a ? '+' : '−') + Math.abs(Math.round((t.b - t.a) / t.a * 100)) + ' %)' : '');
+      if (applyBtn) { applyBtn.lastChild.textContent = 'Ausgewählte übernehmen (' + t.n + ')'; applyBtn.disabled = !t.n; }
+    }
+    var boxes = [];
+    items.forEach(function (it) {
+      var tr = el('tr');
+      var td0 = el('td'); var cb = el('input'); cb.type = 'checkbox'; cb.checked = it.sel; cb.disabled = !it.nw || it.newEur === null && false;
+      if (!it.nw) { cb.disabled = true; }
+      cb.addEventListener('change', function () { it.sel = cb.checked; upd(); });
+      boxes.push(cb); td0.appendChild(cb); tr.appendChild(td0);
+      var td1 = el('td'); td1.appendChild(el('div', 'cname', it.r.card ? it.r.card.name : '?'));
+      td1.appendChild(el('div', 'meta', (it.r.card ? (it.r.card.setName || '?') + ' · Nr. ' + it.r.card.number : '')));
+      it.flags.forEach(function (f) { td1.appendChild(el('span', 'rflag' + (f.bad ? ' bad' : ''), f.t)); });
+      tr.appendChild(td1);
+      var td2 = el('td', 'num');
+      var oldT = it.oldEur !== null ? kidPrice(it.oldEur, 'EUR') : '–', newT = it.newEur !== null ? kidPrice(it.newEur, 'EUR') : '–';
+      td2.appendChild(document.createTextNode(oldT + ' → ' + newT));
+      tr.appendChild(td2);
+      var td3 = el('td', 'num');
+      if (it.oldEur !== null && it.newEur !== null && it.oldEur > 0) {
+        var d = (it.newEur - it.oldEur) / it.oldEur * 100;
+        td3.className = 'num ' + (d > 0.5 ? 'up' : d < -0.5 ? 'dn' : '');
+        td3.textContent = (d >= 0 ? '+' : '−') + Math.abs(Math.round(d)) + ' %';
+      }
+      tr.appendChild(td3);
+      tb.appendChild(tr);
+    });
+    box.appendChild(tb);
+    var btns = el('div', 'btns'); btns.style.marginTop = '12px';
+    function mini(label, icon, cls, fn) { var b = el('button', 'btn small ' + cls); b.type = 'button'; b.appendChild(el('span', 'ic', icon)); b.appendChild(document.createTextNode(label)); b.addEventListener('click', fn); return b; }
+    btns.appendChild(mini('Alle', '☑️', 'grey', function () { items.forEach(function (it, k) { if (it.nw && it.newEur !== null) { it.sel = true; boxes[k].checked = true; } }); upd(); }));
+    btns.appendChild(mini('Keine', '⬜', 'grey', function () { items.forEach(function (it, k) { it.sel = false; boxes[k].checked = false; }); upd(); }));
+    applyBtn = mini('Ausgewählte übernehmen', '✅', 'green', function () {
+      var n = applyReval(items);
+      $('revProg').textContent = '✅ ' + n + ' Karte(n) aktualisiert, der Rest blieb unverändert.';
+      closeAdv();
+    });
+    btns.appendChild(applyBtn);
+    btns.appendChild(mini('Verwerfen', '🗑️', 'grey', function () { $('revProg').textContent = 'Auswertung verworfen – nichts geändert.'; closeAdv(); }));
+    box.appendChild(btns);
+    upd();
+  }
+
+  function applyReval(items) {
+    var coll = loadColl(), n = 0;
+    items.forEach(function (it) {
+      if (!it.sel || !it.nw) { return; }
+      var old = coll.cards[it.r.id];
+      if (!old) { return; }
+      var c = it.nw.card, newId = cardKey(c), info = it.nw.info || {};
+      var a30 = IS30_RE.test(c.setName || '');
+      var keys = matchKeys([c.name, info.name, info.name_en], info.number || c.number, info.printed_total || c.total, a30).concat(matchKeys([c.name], c.number, c.total, a30));
+      if (newId === old.id && old.keys) { old.keys.forEach(function (k) { if (keys.indexOf(k) === -1) { keys.push(k); } }); }
+      var pr = it.nw.price, ex = coll.cards[newId];
+      var rec = {
+        id: newId, card: c, variant: it.nw.variant, keys: keys, price: { val: pr.val, cur: pr.cur, src: pr.src },
+        checked: Date.now(), first: old.first, count: old.count, fav: !!(old.fav || (ex && ex.fav)), scan: !!(old.scan || (ex && ex.scan))
+      };
+      if (old.auth && newId === old.id) { rec.auth = old.auth; }
+      if (newId !== old.id) {
+        delete coll.cards[old.id];
+        if (old.scan) { scanGet(old.id).then(function (b) { return b ? scanPut(newId, b) : null; }).then(function () { return scanDel(old.id); }); }
+      }
+      coll.cards[newId] = rec;
+      n++;
+    });
+    saveColl(coll);
+    return n;
+  }
+
+  /* ---------- Echtheit neu bewerten (gespeichertes Foto gegen gefundene Karte) ---------- */
+  var REAUTH_PROMPT =
+    'Du hilfst zu prüfen, ob eine Pokémon-Sammelkarte möglicherweise gefälscht ist. Bild 1 ist das Foto der geprüften Karte. ' +
+    'Bild 2 (falls vorhanden) ist das offizielle Referenzbild derselben Karte aus der Datenbank; Sprache, Ausführung, Glanz und Bildausschnitt dürfen abweichen. ' +
+    'Vergleiche gezielt Layout, Schrift, Rechtschreibung, Symbole, Farben, Lage der Elemente und Druckbild. ' +
+    'Sei vorsichtig und fair: Bewerte nur dann mit \"auffaellig\", wenn du klare Hinweise siehst. Schlechte Fotoqualität, Unschärfe, Lichtreflexe oder Abnutzung sind KEIN Hinweis – dann \"unklar\". ' +
+    'WICHTIG: Heute ist der ' + new Date().toLocaleDateString('de-DE') + '. Es gibt neuere Sets, Set-Kürzel und Jahreszahlen, als du aus deinem Training kennst. ' +
+    'Ein dir unbekanntes Set, Set-Kürzel oder eine aktuelle Jahreszahl ist KEIN Hinweis auf eine Fälschung. ' +
+    'Antworte ausschließlich mit JSON in genau diesem Format: {\"vorderseite\":{\"bewertung\":\"unauffaellig, auffaellig oder unklar\",\"gruende\":[\"kurze deutsche Sätze\"]},\"gesamt\":\"ein kurzer Satz\"}.';
+
+  function scoreReauth(rec, info, o) {
+    var c = rec.card, items = [], score = 0;
+    function add(w, group, txt) { score += w; items.push({ w: w, group: group, txt: txt }); }
+    var q = quickCheck(info, c);
+    q.flags.forEach(function (f) { add(f.w, 'Abgleich mit Datenbank', f.txt); });
+    var gn = normNum(info.number), cn = normNum(c.number);
+    if (gn && cn && gn !== cn) { add(2, 'Nummer', 'Auf dem Foto steht Nr. ' + gn + ', gespeichert ist Nr. ' + cn + ' – möglicherweise wurde die falsche Karte zugeordnet'); }
+    if (is30(info) && !IS30_RE.test(c.setName || '')) { add(3, '30th Celebration', 'Auf dem Foto ist das 30-Jahre-Logo zu sehen, gespeichert ist aber die normale Ausgabe (' + (c.setName || '?') + ') – der Wert ist vermutlich zu hoch'); }
+    var vb = bewertung(o.vorderseite), vg = gruende(o.vorderseite).filter(function (g) { return !EXISTENCE_RE.test(g); });
+    if (/^auff/.test(vb) && !vg.length) { vb = 'unklar'; }
+    if (/^auff/.test(vb)) { add(Math.min(3, 1 + vg.length), 'Foto gegen Referenz', vg.join(' ') || 'auffällig'); }
+    else { items.push({ w: 0, group: 'Foto gegen Referenz', txt: (/^unauff/.test(vb) ? 'unauffällig' : 'nicht sicher zu beurteilen') + (vg.length ? ': ' + vg.join(' ') : '') }); }
+    var st = score <= 1 ? 'ok' : score <= 4 ? 'warn' : 'alert';
+    return { state: st, score: score, items: items, summary: o.gesamt ? String(o.gesamt) : '', date: Date.now(),
+      erkannt: { name: info.name || '', number: info.number || '', total: info.printed_total || '', logo30: is30(info) } };
+  }
+
+  function startReauth(id) {
+    var coll = loadColl(), r = coll.cards[id];
+    if (!r || !r.card) { return; }
+    if (!r.scan) { mgMsg('Zu dieser Karte ist kein Foto gespeichert – die Echtheit lässt sich nicht neu bewerten.', true); return; }
+    if (!getKey()) { mgMsg('Der Gemini-Schlüssel fehlt (Einstellungen).', true); return; }
+    mgMsg('');
+    openAdv();
+    var box = $('advBox'), urls = [];
+    box.appendChild(advHead('🛡️ Echtheit neu bewerten'));
+    box.appendChild(el('div', 'meta', r.card.name + ' · ' + (r.card.setName || '?') + ' · Nr. ' + r.card.number));
+    var pair = el('div', 'pair');
+    var f1 = el('figure'); var i1 = el('img'); f1.appendChild(i1); f1.appendChild(el('figcaption', null, '📷 Gespeichertes Foto')); pair.appendChild(f1);
+    var f2 = el('figure', 'found'); var i2 = el('img'); f2.appendChild(i2); f2.appendChild(el('figcaption', null, '🗂️ Gefundene Karte')); pair.appendChild(f2);
+    box.appendChild(pair);
+    var chain = [r.card.imgHi, r.card.img].filter(function (u) { return u; }), ci = 0;
+    function nxt() { if (ci < chain.length) { i2.src = chain[ci++]; } else { i2.style.display = 'none'; } }
+    i2.onerror = nxt; nxt();
+    var st = el('div', 'fnote', '⏳ Das Foto wird von der KI neu gelesen und mit der Datenbank verglichen … (bis zu einer Minute)');
+    box.appendChild(st);
+    var out = el('div'); box.appendChild(out);
+    scanGet(id).then(function (blob) { if (blob) { var u = URL.createObjectURL(blob); urls.push(u); i1.src = u; } });
+    var b64, info;
+    scanB64(id).then(function (b) {
+      if (!b) { throw new Error('Das gespeicherte Foto fehlt.'); }
+      b64 = b;
+      return withDeep(function () { return identify([b64], null, slotLogger('R')); });
+    }).then(function (inf) {
+      info = inf;
+      return fetchB64(r.card.imgHi || r.card.img, 10000, slotLogger('R'));
+    }).then(function (ref) {
+      var parts = [{ text: REAUTH_PROMPT + ' Karte laut Datenbank: ' + r.card.name + ', ' + (r.card.setName || '?') + ', Nr. ' + r.card.number + '.' + (ref ? '' : ' Es gibt kein Referenzbild, bewerte vorsichtig mit \"unklar\".') },
+        { inlineData: { mimeType: 'image/jpeg', data: b64 } }];
+      if (ref) { parts.push({ inlineData: { mimeType: ref.mime, data: ref.data } }); }
+      return withDeep(function () { return geminiJSON(parts, null, slotLogger('R'), '🔎 Echtheit prüfen', '📝 Echtheits-Antwort auswerten'); });
+    }).then(function (g) {
+      var res = scoreReauth(r, info, g.o || {});
+      var cl = loadColl(); if (cl.cards[id]) { cl.cards[id].auth = res; saveColl(cl); }
+      st.textContent = 'Fertig. Das Ergebnis ist an der Karte gespeichert.';
+      out.appendChild(el('div', 'ampel ' + res.state, DEEP_LABEL[res.state]));
+      if (res.summary) { out.appendChild(el('div', 'fq', '🤖 ' + res.summary)); }
+      out.appendChild(el('div', 'meta', 'Erkannt auf dem Foto: ' + (res.erkannt.name || '–') + ' · Nr. ' + (res.erkannt.number || '–') + (res.erkannt.total ? '/' + res.erkannt.total : '') + (res.erkannt.logo30 ? ' · 30-Jahre-Logo: ja' : '')));
+      var ul = el('ul', 'freasons');
+      res.items.forEach(function (it) { ul.appendChild(el('li', it.w > 0 ? 'neg' : 'pos', (it.w > 0 ? '⚠️ ' : '✔️ ') + it.group + ': ' + it.txt)); });
+      out.appendChild(ul);
+      out.appendChild(el('div', 'fnote', 'Ein Foto-Check kann eine Fälschung weder sicher erkennen noch sicher ausschließen.'));
+    }).catch(function (e) {
+      st.textContent = '😕 ' + niceError(e);
+      st.className = 'fnote rerr';
+    });
+  }
+
+  /* ---------- Bericht zu einer einzelnen Karte (auch aus dem Archiv) ---------- */
+  function ghPut(name, payload) {
+    return encryptReport(payload, repPass()).then(function (file) {
+      var content = u8ToB64(new TextEncoder().encode(JSON.stringify(file)));
+      return ghApi('/repos/' + ghRepo() + '/contents/berichte/' + name + '.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Bericht ' + name, content: content })
+      }, 120000);
+    });
+  }
+
+  function sendCardReport(id) {
+    var why = ghReady();
+    if (why) { mgMsg('📮 ' + why, true); return; }
+    var r = loadColl().cards[id];
+    if (!r || !r.card) { return; }
+    var stamp = stampOf(new Date());
+    var name = 'karte_v' + APP_VERSION + '_' + stamp + '_' + Math.random().toString(36).slice(2, 6);
+    mgMsg('🔒 Bericht wird vorbereitet …');
+    scanB64(id).then(function (scan) {
+      return fetchB64(r.card.imgHi || r.card.img, 10000, slotLogger('R')).then(function (ref) {
+        var rep = {
+          app: 'Karten-Check', version: APP_VERSION, typ: 'Bericht zu einer Karte aus der Sammlung', erstellt: new Date().toLocaleString('de-DE'),
+          archiviert: r.archived ? new Date(r.archived).toLocaleString('de-DE') : null, favorit: !!r.fav, foto_gespeichert: !!scan,
+          erstmals_gecheckt: new Date(r.first || r.checked).toLocaleString('de-DE'), zuletzt_gecheckt: new Date(r.checked).toLocaleString('de-DE'),
+          ausfuehrung: r.variant, preis_gespeichert: r.price, karte: cardSummary(r.card), sammlungs_schluessel: r.keys || [],
+          echtheit_letzte_pruefung: r.auth || null
+        };
+        var lines = ['KARTEN-BERICHT (einzelne Karte aus der Sammlung)', 'Version ' + APP_VERSION + ' · ' + rep.erstellt, '',
+          'Karte: ' + r.card.name + ' · ' + (r.card.setName || '?') + ' · Nr. ' + r.card.number + '/' + (r.card.total || '?') + ' · Quelle ' + r.card.src,
+          'Gespeicherter Wert: ' + (r.price && isNum(r.price.val) ? fmt(r.price.val, r.price.cur) : 'kein Preis') + ' (' + r.variant + ')',
+          'Zuletzt gecheckt: ' + rep.zuletzt_gecheckt + (r.archived ? ' · im Archiv seit ' + rep.archiviert : ''),
+          'Foto gespeichert: ' + (scan ? 'ja' : 'nein') + ' · Referenzbild: ' + (ref ? 'ja' : 'nein')];
+        if (r.auth) { lines.push('Echtheit (' + new Date(r.auth.date).toLocaleDateString('de-DE') + '): ' + r.auth.state + ' (' + r.auth.score + ' Punkte)'); r.auth.items.forEach(function (it) { lines.push('  ' + (it.w > 0 ? '⚠ ' : '✓ ') + it.group + ': ' + it.txt); }); }
+        var photos = [];
+        if (scan) { photos.push({ name: 'gespeichertes_foto.jpg', b64: scan }); }
+        if (ref) { photos.push({ name: 'referenz_datenbank.' + (/png/.test(ref.mime) ? 'png' : /webp/.test(ref.mime) ? 'webp' : 'jpg'), b64: ref.data }); }
+        mgMsg('📮 Bericht wird verschlüsselt und hochgeladen …');
+        return ghPut(name, { name: name, version: APP_VERSION, text: lines.join('\n') + '\n\n---- VOLLSTÄNDIGE DATEN (JSON) ----\n' + JSON.stringify(rep, null, 1), photos: photos });
+      });
+    }).then(function () {
+      mgMsg('✅ Bericht verschlüsselt abgelegt (' + name + '). Sag Claude im Chat einfach: „Bericht ist da“.');
+    }).catch(function (e) {
+      var m = e && e.message ? e.message : 'unbekannter Fehler';
+      if (e && (e.status === 401 || e.status === 403)) { m = 'GitHub lehnt den Zugangsschlüssel ab (abgelaufen oder ohne Schreibrecht für diese Ablage).'; }
+      if (e && e.status === 404) { m = 'Ablage nicht gefunden – Name prüfen, und ob der Zugangsschlüssel für genau diese Ablage gilt.'; }
+      mgMsg('❌ Hochladen fehlgeschlagen: ' + m, true);
     });
   }
 
@@ -4528,6 +4984,31 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(function () { /* ohne Offline-Start weiter */ });
   }
+  var artPick = null;
+  function artImg(c) {
+    var im = el('img'); im.alt = ''; im.draggable = false;
+    var chain = [c.imgHi, c.img].filter(function (u) { return u; }), k = 0;
+    im.onerror = function () { if (k < chain.length) { im.src = chain[k++]; } else { im.style.display = 'none'; } };
+    im.onerror();
+    return im;
+  }
+  /* Startkacheln: zufällige echte Karten aus der Sammlung (bei jedem Neuladen neu gemischt) */
+  function startArt() {
+    var pool = collList(false).filter(function (r) { return r.card && (r.card.img || r.card.imgHi); });
+    if (!artPick) {
+      var a = pool.slice();
+      for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+      artPick = a.map(function (r) { return r.card; });
+    }
+    var one = $('goOne').querySelector('.si'), two = $('goTwo').querySelector('.si');
+    if (!one.getAttribute('data-orig')) { one.setAttribute('data-orig', one.innerHTML); two.setAttribute('data-orig', two.innerHTML); }
+    if (artPick.length >= 1 && !one.classList.contains('art')) {
+      one.className = 'si art one'; clear(one); one.appendChild(artImg(artPick[0]));
+    }
+    if (artPick.length >= 2 && !two.classList.contains('art')) {
+      two.className = 'si art two'; clear(two); two.appendChild(artImg(artPick[1])); two.appendChild(artImg(artPick[2 % artPick.length === 1 ? 1 : (artPick.length > 2 ? 2 : 0)]));
+    }
+  }
   renderColl();
   $('collExp').addEventListener('click', exportColl);
   $('collImp').addEventListener('change', function (e) { var f = e.target.files[0]; e.target.value = ''; if (f) { importColl(f); } });
@@ -4559,6 +5040,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     archArm.all = 0; $('archClr').lastChild.textContent = 'Archiv leeren';
     var coll = loadColl(); n.forEach(function (r) { delete coll.cards[r.id]; scanDel(r.id); }); saveColl(coll);
   });
+  $('revGo').addEventListener('click', startReval);
+  $('revStop').addEventListener('click', function () { rev.stop = true; $('revProg').textContent = '⏹️ Wird nach der aktuellen Karte abgebrochen …'; });
   $('cardOv').addEventListener('click', function (ev) { if (ev.target === $('cardOv')) { closeCardOv(); } });
   $('homeBtn').addEventListener('click', function () { if (screen === 'in') { newCompare(); } else { showScreen('start'); } });
   $('saveSettings').addEventListener('click', function () { updSetWarn(); });
