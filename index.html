@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karten-Check v1.33</title>
+<title>Karten-Check v1.35</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -221,6 +221,11 @@
   .stile .si.art img { height: 150px; width: auto; border: 3px solid #111; border-radius: 8px; background: #fff; box-shadow: 0 5px 0 rgba(17,17,17,.45); }
   .stile .si.art.two img { height: 128px; } .stile .si.art.two img:first-child { transform: rotate(-9deg); margin-right: -26px; } .stile .si.art.two img:last-child { transform: rotate(9deg); }
   .stile .si.art.one img { transform: rotate(-4deg); }
+  .stile .pen { position: absolute; right: 10px; top: 10px; width: 46px; height: 46px; border-radius: 50%; border: 3px solid #111; background: #fff; font-size: 1.4rem; cursor: pointer; box-shadow: 0 3px 0 #111; z-index: 2; }
+  .cpin { border: 0; background: none; font-size: 1.2rem; cursor: pointer; opacity: .45; padding: 0 4px; } .cpin.on { opacity: 1; }
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; margin-top: 8px; }
+  .pcell { border: 4px solid transparent; border-radius: 10px; cursor: pointer; background: #f1f5f9; padding: 2px; } .pcell.on { border-color: #facc15; background: #fef9c3; }
+  .pcell img { width: 100%; display: block; border-radius: 6px; }
   .arow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 2px dashed #e2e8f0; } .arow img { width: 44px; border-radius: 5px; } .arow .amid { flex: 1; min-width: 0; }
   details.adult { margin-top: 14px; text-align: left; }
   details.cmp > summary { font-weight: 800; cursor: pointer; }
@@ -331,7 +336,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   <div class="hero">
     <div class="logo">🃏✨💰</div>
     <h1>Karten-Check</h1>
-    <div class="ver">Version 1.33 · 21.11.2026</div>
+    <div class="ver">Version 1.35 · 22.11.2026</div>
   </div>
 
   <div id="scrStart" class="scr">
@@ -428,6 +433,13 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
         <div id="mgList"></div>
         <div class="status mgmsg"></div>
       </details>
+      <details class="box" id="typBox">
+        <summary>🏷️ Typen nachbessern</summary>
+        <div class="meta" id="typInfo"></div>
+        <div class="meta">Die KI liest bei Karten unter „Sonstige“ den Typ vom gespeicherten Foto. Danach siehst du eine Liste und wählst, was übernommen wird.</div>
+        <div class="btns"><button type="button" class="btn green" id="typGo"><span class="ic">🏷️</span>Typen lesen</button><button type="button" class="btn small grey" id="typStop" style="display:none"><span class="ic">⏹️</span>Abbrechen</button></div>
+        <div class="status" id="typProg"></div>
+      </details>
       <details class="box" id="archBox">
         <summary>🗄️ Archiv (gelöschte Karten) <span id="archCount"></span></summary>
         <div class="meta">Karten, die in „Meine Karten“ gelöscht wurden. Hier kannst du sie wiederherstellen.</div>
@@ -514,7 +526,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 
 <div class="ov" id="cropOv" style="display:none">
   <div class="ovbox">
-    <div class="ovhint"><button type="button" class="spk" id="cropSpk" title="Vorlesen">🔊</button> ✋ Zieh die Ecken genau an die Karte. Wird der Rahmen <b style="color:#4ade80">grün</b>, ist alles gut 👍</div>
+    <div class="ovhint"><button type="button" class="spk" id="cropSpk" title="Vorlesen">🔊</button> ✋ Zieh die Ecken an die Karte – lieber ein bisschen zu weit als zu eng. Wird der Rahmen <b style="color:#4ade80">grün</b>, ist alles gut 👍</div>
     <canvas id="cropCv"></canvas>
     <div id="cropQ" class="qbox"></div>
     <div class="btns">
@@ -531,7 +543,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 (function () {
   'use strict';
 
-  var APP_VERSION = '1.33';
+  var APP_VERSION = '1.35';
   var REPORT_MAIL = '';
 
   /* ===== Eingebauter Gemini-Schlüssel (nur private Nutzung, Datei nicht weitergeben) ===== */
@@ -575,6 +587,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     '"regulation_mark":"einzelner Buchstabe im Kästchen unten links, z. B. G, sonst leer",' +
     '"set_code":"Set-Kürzel unten links, z. B. OBF, sonst leer",' +
     '"anniversary_30":"ja oder nein – ja NUR, wenn das Logo zum 30-jährigen Jubiläum (ein Pikachu-Symbol mit der Zahl 30) oder ein Stempel mit 30th auf der Karte zu sehen ist, z. B. hinter dem Text, neben dem Bild oder als Stempel; sonst nein",' +
+    '"type":"Typ der Karte laut Symbol oben rechts neben den KP, als ein deutsches Wort: pflanze, feuer, wasser, elektro, psycho, kampf, finsternis, metall, drache, fee oder farblos; bei Trainer- und Energiekarten keiner",' +
     '"auffaelligkeiten":["kurze deutsche Sätze"]}. ' +
     'In "auffaelligkeiten" gehören NUR eindeutige Hinweise auf einen fehlerhaften Druck oder eine Fälschung: ' +
     'Rechtschreib- oder Übersetzungsfehler, falsche oder uneinheitliche Schrift, falsche Energiesymbole, ' +
@@ -2080,9 +2093,12 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       card = crop.src;
     } else {
       var k = crop.src.width / crop.base.width, r = crop.rect;
-      var sx = Math.max(0, Math.round(r.x * k)), sy = Math.max(0, Math.round(r.y * k));
-      var sw = Math.min(crop.src.width - sx, Math.round(r.w * k));
-      var sh = Math.min(crop.src.height - sy, Math.round(r.h * k));
+      var padX = r.w * 0.06, padY = r.h * 0.06;   /* etwas Rand dazugeben, Caio schneidet gern zu eng */
+      var x0 = Math.max(0, r.x - padX), y0 = Math.max(0, r.y - padY);
+      var x1 = Math.min(crop.base.width, r.x + r.w + padX), y1 = Math.min(crop.base.height, r.y + r.h + padY);
+      var sx = Math.max(0, Math.round(x0 * k)), sy = Math.max(0, Math.round(y0 * k));
+      var sw = Math.min(crop.src.width - sx, Math.round((x1 - x0) * k));
+      var sh = Math.min(crop.src.height - sy, Math.round((y1 - y0) * k));
       if (sw < 50 || sh < 50) { card = crop.src; whole = true; } else { card = subCanvas(crop.src, sx, sy, sw, sh); }
     }
     if (!whole && q) {
@@ -3531,6 +3547,12 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   /* ---------- Änderungshistorie ---------- */
 
   var CHANGELOG = [
+    ['1.35', '22.11.2026', ['Ausschnitt: Beim Zuschneiden kommt rundum etwas Rand dazu (ca. 6 %), damit nichts abgeschnitten wird. Hinweistext: lieber etwas zu weit als zu eng.',
+      'Typ: Die KI liest beim Scannen auch den Typ vom Symbol oben rechts. Fehlt der Typ in der Datenbank (neue Sets), gilt der vom Foto. Deine Korrektur geht immer vor.',
+      'Erwachsenen-Bereich: „🏷️ Typen nachbessern“ liest den Typ bei Karten unter „Sonstige“ aus dem gespeicherten Foto, mit Liste zum Abwählen.',
+      'Startbildschirm: Caio wählt selbst, welche Karten dort zu sehen sind – mit ✏️ direkt an der Kachel (Bilderraster) oder mit 📌 in „Meine Karten“. 🎲 Zufällig stellt es zurück.']],
+    ['1.34', '21.11.2026', ['Typ-Filter: Die Anzahl je Typ passt sich an, wenn „💎 Favoriten“ gewählt ist (und Typen ohne Favoriten verschwinden).',
+      'Typ einer Karte korrigieren: in der Großansicht (Tipp aufs Bild) unter „🏷️ Typ“ den richtigen Typ antippen. „Automatisch“ stellt den Typ aus der Datenbank wieder her.']],
     ['1.33', '21.11.2026', ['Meine Karten: nach Typ filtern (Pflanze, Feuer, Wasser, Elektro, Psycho, Kampf, Finsternis, Metall, Drache, Fee, Farblos, Sonstige). Der Typ wird bei neuen Karten gleich gespeichert, bei älteren im Hintergrund nachgeladen.',
       'Startbildschirm: statt Symbolen zeigen „1 Karte“ und „Vergleich“ echte Karten aus deiner Sammlung (Bilder aus der Datenbank), bei jedem Neuladen zufällig andere.']],
     ['1.32', '21.11.2026', ['Erwachsenen-Bereich: „Sammlung neu bewerten“ – frische Preise für alle Karten (optional auch Karten mit Foto neu erkennen, Gründlich-Modus), danach Auswertung mit Alt/Neu je Karte; alles ist vorausgewählt, einzelne Karten lassen sich abwählen, dann „Ausgewählte übernehmen“.',
@@ -3691,6 +3713,9 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       checked: Date.now(), first: old ? old.first : Date.now(), count: (old ? old.count : 0) + (st.savedId === id ? 0 : 1),
       fav: !!(old && old.fav), scan: !!(lastImg[slot] || (old && old.scan))
     };
+    if (old && old.typeOv) { coll.cards[id].typeOv = old.typeOv; }
+    var aiT = mapType(info.type) || (old && old.typeAi) || '';
+    if (aiT) { coll.cards[id].typeAi = aiT; }
     if (lastImg[slot]) { makeThumb(lastImg[slot].parts[0]).then(function (b) { return b ? scanPut(id, b) : false; }); }
     st.createdNew = st.savedId === id ? st.createdNew : !old;
     st.savedId = id;
@@ -3837,7 +3862,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   function sortedColl() {
     var list = collList(false);
     if (collFav) { list = list.filter(function (r) { return r.fav; }); }
-    if (collType) { list = list.filter(function (r) { return typeKeys(r.card).indexOf(collType) > -1; }); }
+    if (collType) { list = list.filter(function (r) { return recType(r).indexOf(collType) > -1; }); }
     if (collSort === 'val_desc' || collSort === 'val_asc') {
       var dir = collSort === 'val_desc' ? -1 : 1;
       list.sort(function (a, b) {
@@ -3865,7 +3890,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     ['wasser', '💧 Wasser', /water|wasser|eau|agua|acqua|woda|vloeistof/i], ['elektro', '⚡ Elektro', /lightning|elektro|electr|foudre|rayo|lampo|blitz/i],
     ['psycho', '🔮 Psycho', /psychic|psycho|psy|psiquico|psichico/i], ['kampf', '👊 Kampf', /fighting|kampf|combat|lucha|lotta|fight/i],
     ['finsternis', '🌑 Finsternis', /dark|finster|obscur|siniestr|oscur|duister/i], ['metall', '⚙️ Metall', /metal|acier|acero|acciaio|staal/i],
-    ['drache', '🐉 Drache', /dragon|drache|drago|draak/i], ['fee', '🧚 Fee', /fairy|fee|hada|folletto|fe\b/i], ['farblos', '⚪ Farblos', /colorless|farblos|incolore|incoloro|incolor|kleurloos/i]];
+    ['drache', '🐉 Drache', /dragon|drache|drago|draak/i], ['fee', '🧚 Fee', /fairy|fee|hada|folletto|fe\b/i], ['farblos', '⚪ Farblos', /colorless|farblos|incolore|incoloro|incolor|kleurloos|normal/i]];
   function typeKeys(card) {
     var out = [];
     ((card && isArr(card.types)) ? card.types : []).forEach(function (t) {
@@ -3873,7 +3898,25 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     });
     return out.length ? out : ['sonstige'];
   }
+  function typeKeysRaw(card) { var k = typeKeys(card); return k[0] === 'sonstige' ? [] : k; }
+  /* Typ-Wort der KI auf einen Schlüssel abbilden: '' = nicht lesbar, 'sonstige' = kein Typ (Trainer/Energie) */
+  function mapType(v) {
+    v = String(v || '').trim();
+    if (!v) { return ''; }
+    if (/^(keiner?|kein|none|trainer|energie|energy|-)/i.test(v)) { return 'sonstige'; }
+    for (var i = 0; i < TYPES.length; i++) { if (TYPES[i][2].test(v)) { return TYPES[i][0]; } }
+    return '';
+  }
   var collType = '', typeFilling = false;
+  /* Rangfolge: deine Korrektur, dann Datenbank, dann KI-Typ vom Foto */
+  function recType(r) {
+    if (r.typeOv) { return [r.typeOv]; }
+    var k = typeKeysRaw(r.card);
+    if (k.length) { return k; }
+    return [r.typeAi || 'sonstige'];
+  }
+  function typeLabel(k) { for (var i = 0; i < TYPES.length; i++) { if (TYPES[i][0] === k) { return TYPES[i][1]; } } return '🃏 Sonstige'; }
+  function typeCandidates() { return collList(false).filter(function (r) { return !r.typeOv && !r.typeAi && r.card && !typeKeysRaw(r.card).length; }); }
   function typeRows() { return collList(false).filter(function (r) { return r.card && !isArr(r.card.types) && /^(dex|ptcg):/.test(r.card.id || ''); }); }
   /* Fehlende Typen bei älteren Karten im Hintergrund nachladen (ohne KI) */
   function fillTypes() {
@@ -3903,7 +3946,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     if (!tb) { tb = el('div', 'tfbar'); tb.id = 'typeBar'; bar.parentNode.insertBefore(tb, bar.nextSibling); }
     clear(tb);
     var have = {};
-    collList(false).forEach(function (r) { typeKeys(r.card).forEach(function (k) { have[k] = (have[k] || 0) + 1; }); });
+    collList(false).filter(function (r) { return !collFav || r.fav; }).forEach(function (r) { recType(r).forEach(function (k) { have[k] = (have[k] || 0) + 1; }); });
     if (collType && !have[collType]) { collType = ''; }
     var opts = TYPES.concat([['sonstige', '🃏 Sonstige (Trainer, Energie)', null]]).filter(function (t) { return have[t[0]]; });
     if (opts.length > 1) {
@@ -3962,6 +4005,10 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       fav.type = 'button'; fav.title = 'Favorit';
       fav.addEventListener('click', function () { toggleFav(r.id); });
       right.appendChild(fav);
+      var pin = el('button', 'cpin' + (pinsOf(r.id).length ? ' on' : ''), '📌');
+      pin.type = 'button'; pin.title = 'Aufs Startbild';
+      pin.addEventListener('click', function () { pinDialog(r.id); });
+      right.appendChild(pin);
       var del = el('button', 'cdel', '🗑️');
       del.type = 'button';
       del.title = 'Ins Archiv verschieben';
@@ -4028,6 +4075,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       if (!all.length) { mg.appendChild(el('div', 'meta', 'Noch keine Karten in der Sammlung.')); }
       all.forEach(function (r) { mg.appendChild(adultRow(r, false)); });
     }
+    var ti = $('typInfo');
+    if (ti) { var tc = typeCandidates(); ti.textContent = tc.length + ' Karten ohne Typ, davon ' + tc.filter(function (r) { return r.scan; }).length + ' mit gespeichertem Foto.'; }
     var ri2 = $('revInfo');
     if (ri2) { ri2.textContent = all.length + ' Karten in der Sammlung, davon ' + all.filter(function (r) { return r.scan; }).length + ' mit gespeichertem Foto.'; }
   }
@@ -4228,6 +4277,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
         checked: Date.now(), first: old.first, count: old.count, fav: !!(old.fav || (ex && ex.fav)), scan: !!(old.scan || (ex && ex.scan))
       };
       if (old.auth && newId === old.id) { rec.auth = old.auth; }
+      if (old.typeOv) { rec.typeOv = old.typeOv; }
+      if (old.typeAi) { rec.typeAi = old.typeAi; }
       if (newId !== old.id) {
         delete coll.cards[old.id];
         if (old.scan) { scanGet(old.id).then(function (b) { return b ? scanPut(newId, b) : null; }).then(function () { return scanDel(old.id); }); }
@@ -4420,11 +4471,29 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     box.appendChild(kid);
     box.appendChild(el('div', 'meta', '📦 ' + (c.setName || '?') + ' · Nr. ' + c.number + (c.total ? '/' + c.total : '') + (c.rarity ? ' · ⭐ ' + c.rarity : '') + ' · ' + VNAME[r.variant || 'normal']));
     box.appendChild(el('div', 'meta', (isStale(r) ? '⏰ Alter Preis vom ' : '📅 Gecheckt am ') + dateDe(r.checked) + (isStale(r) ? ' – bitte neu checken' : '')));
+    box.appendChild(el('div', 'meta', '🏷️ Typ: ' + typeLabel(recType(r)[0]) + (r.typeOv ? ' (von dir geändert)' : (!typeKeysRaw(r.card).length && r.typeAi ? ' (vom Foto gelesen)' : ''))));
+    var tw = el('div', 'tfbar');
+    TYPES.concat([['sonstige', '🃏 Sonstige', null]]).forEach(function (t) {
+      var b = el('button', recType(r)[0] === t[0] ? 'on' : '', t[1]); b.type = 'button';
+      b.addEventListener('click', function () {
+        var cl = loadColl();
+        if (cl.cards[id]) { cl.cards[id].typeOv = t[0]; }
+        saveColl(cl); openCardOv(id);
+      });
+      tw.appendChild(b);
+    });
+    var ab = el('button', r.typeOv ? '' : 'on', '↩️ Automatisch'); ab.type = 'button';
+    ab.addEventListener('click', function () { var cl = loadColl(); if (cl.cards[id]) { delete cl.cards[id].typeOv; } saveColl(cl); openCardOv(id); });
+    tw.appendChild(ab);
+    box.appendChild(tw);
     var fb = el('button', 'btn small ' + (r.fav ? 'yellow' : 'grey')); fb.type = 'button';
     fb.appendChild(el('span', 'ic', '💎')); var ft = document.createTextNode(r.fav ? 'Favorit' : 'Zu Favoriten');
     fb.appendChild(ft);
     fb.addEventListener('click', function () { var on = toggleFav(id); ft.textContent = on ? 'Favorit' : 'Zu Favoriten'; fb.className = 'btn small ' + (on ? 'yellow' : 'grey'); });
-    var br = el('div', 'btns'); br.appendChild(fb);
+    var pb2 = el('button', 'btn small ' + (pinsOf(id).length ? 'yellow' : 'grey')); pb2.type = 'button';
+    pb2.appendChild(el('span', 'ic', '📌')); pb2.appendChild(document.createTextNode(pinsOf(id).length ? 'Aufs Startbild ✔' : 'Aufs Startbild'));
+    pb2.addEventListener('click', function () { closeCardOv(); pinDialog(id); });
+    var br = el('div', 'btns'); br.appendChild(fb); br.appendChild(pb2);
     box.appendChild(br);
   }
 
@@ -4972,7 +5041,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   $('modeFast').addEventListener('click', function () { setMode('fast'); });
   $('modeDeep').addEventListener('click', function () { setMode(searchMode === 'deep' ? 'fast' : 'deep'); });
   $('ghTest').addEventListener('click', testGh);
-  $('cropSpk').addEventListener('click', function () { speak('Zieh die Ecken genau an die Karte. Wenn der Rahmen grün ist, ist alles gut. Dann drück auf Zuschneiden.'); });
+  $('cropSpk').addEventListener('click', function () { speak('Zieh die Ecken an die Karte. Lieber ein bisschen zu weit als zu eng. Wenn der Rahmen grün ist, ist alles gut. Dann drück auf Zuschneiden.'); });
   renderChangelog();
   initVoice();
   $('xferQrBtn').addEventListener('click', showKeyQr);
@@ -4984,6 +5053,144 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(function () { /* ohne Offline-Start weiter */ });
   }
+  /* ---------- Typen nachbessern (Erwachsenen-Bereich) ---------- */
+  var typRun = { running: false, stop: false };
+  function startTypes() {
+    if (typRun.running) { return; }
+    var prog = $('typProg'), list = typeCandidates();
+    if (!list.length) { prog.textContent = 'Alle Karten haben einen Typ.'; prog.className = 'status'; return; }
+    if (!getKey()) { prog.textContent = 'Der Gemini-Schlüssel fehlt (Einstellungen).'; prog.className = 'status err'; return; }
+    typRun.running = true; typRun.stop = false; prog.className = 'status';
+    $('typGo').disabled = true; $('typStop').style.display = '';
+    var items = [], i = 0;
+    function next() {
+      if (typRun.stop || i >= list.length) { fin(); return; }
+      var r = list[i++];
+      prog.textContent = '⏳ Karte ' + i + ' von ' + list.length + ': ' + (r.card ? r.card.name : '?');
+      var it = { r: r, key: '', note: '', sel: false };
+      if (!r.scan) { it.note = 'kein Foto'; items.push(it); setTimeout(next, 0); return; }
+      scanB64(r.id).then(function (b64) {
+        if (!b64) { throw new Error('Foto fehlt'); }
+        var parts = [{ text: 'Du siehst das Foto einer Pokémon-Sammelkarte. Lies das Typ-Symbol oben rechts neben den KP. Antworte nur mit JSON: {\"typ\":\"pflanze, feuer, wasser, elektro, psycho, kampf, finsternis, metall, drache, fee, farblos oder keiner\"}. Bei Trainer- und Energiekarten ohne KP: keiner. Ist es nicht sicher lesbar: leer.' },
+          { inlineData: { mimeType: 'image/jpeg', data: b64 } }];
+        var old = searchMode; searchMode = 'fast';
+        return geminiJSON(parts, null, slotLogger('R'), '🏷️ Typ lesen', '📝 Typ auswerten').then(function (g) { searchMode = old; return g; }, function (e) { searchMode = old; throw e; });
+      }).then(function (g) {
+        it.key = mapType(g.o && g.o.typ);
+        if (!it.key) { it.note = 'nicht lesbar'; } else { it.sel = true; }
+      }).catch(function (e) { it.note = niceError(e); }).then(function () { items.push(it); setTimeout(next, 0); });
+    }
+    function fin() {
+      var stopped = typRun.stop;
+      typRun.running = false; $('typGo').disabled = false; $('typStop').style.display = 'none';
+      prog.textContent = (stopped ? '⏹️ Abgebrochen – ' : '✅ Fertig – ') + items.length + ' Karten gelesen.';
+      if (items.length) { showTypeResult(items); }
+    }
+    next();
+  }
+  function showTypeResult(items) {
+    openAdv();
+    var box = $('advBox');
+    box.appendChild(advHead('🏷️ Typen nachbessern'));
+    box.appendChild(el('div', 'meta', 'Vorschläge der KI nach dem Foto. Häkchen entfernen = Karte bleibt unter „Sonstige“. „Sonstige“ ist bei Trainer- und Energiekarten richtig.'));
+    var tb = el('table', 'rvt'), boxes = [], applyBtn;
+    function upd() { var n = items.filter(function (x) { return x.sel; }).length; if (applyBtn) { applyBtn.lastChild.textContent = 'Übernehmen (' + n + ')'; applyBtn.disabled = !n; } }
+    items.forEach(function (it) {
+      var tr = el('tr'), td0 = el('td'), cb = el('input'); cb.type = 'checkbox'; cb.checked = it.sel; cb.disabled = !it.key;
+      cb.addEventListener('change', function () { it.sel = cb.checked; upd(); }); boxes.push(cb); td0.appendChild(cb); tr.appendChild(td0);
+      var td1 = el('td'); td1.appendChild(el('div', 'cname', it.r.card ? it.r.card.name : '?'));
+      td1.appendChild(el('div', 'meta', it.r.card ? (it.r.card.setName || '?') + ' · Nr. ' + it.r.card.number : ''));
+      tr.appendChild(td1);
+      var td2 = el('td', 'num');
+      if (it.key) { td2.textContent = typeLabel(it.key); } else { td2.appendChild(el('span', 'rflag bad', it.note || '–')); }
+      tr.appendChild(td2); tb.appendChild(tr);
+    });
+    box.appendChild(tb);
+    var btns = el('div', 'btns'); btns.style.marginTop = '12px';
+    applyBtn = el('button', 'btn small green'); applyBtn.type = 'button';
+    applyBtn.appendChild(el('span', 'ic', '✅')); applyBtn.appendChild(document.createTextNode('Übernehmen'));
+    applyBtn.addEventListener('click', function () {
+      var cl = loadColl(), n = 0;
+      items.forEach(function (it) { if (it.sel && it.key && cl.cards[it.r.id]) { cl.cards[it.r.id].typeAi = it.key; n++; } });
+      saveColl(cl); $('typProg').textContent = '✅ ' + n + ' Karte(n) einsortiert.'; closeAdv();
+    });
+    btns.appendChild(applyBtn);
+    var dc = el('button', 'btn small grey'); dc.type = 'button';
+    dc.appendChild(el('span', 'ic', '🗑️')); dc.appendChild(document.createTextNode('Verwerfen'));
+    dc.addEventListener('click', function () { $('typProg').textContent = 'Verworfen – nichts geändert.'; closeAdv(); });
+    btns.appendChild(dc); box.appendChild(btns);
+    upd();
+  }
+
+  /* ---------- Startbild: Caio wählt die Karten selbst ---------- */
+  function getPicks() { try { var o = JSON.parse(LS.get('startpick') || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+  function setPick(slot, id) { var o = getPicks(); if (id) { o[slot] = id; } else { delete o[slot]; } LS.set('startpick', JSON.stringify(o)); }
+  function pickRec(id) { var r = id ? loadColl().cards[id] : null; return r && !r.archived && r.card && (r.card.img || r.card.imgHi) ? r : null; }
+  var PICK_NAMES = { one: '1 Karte', left: 'Vergleich links', right: 'Vergleich rechts' };
+  function pinsOf(id) { var o = getPicks(), out = []; ['one', 'left', 'right'].forEach(function (k) { if (o[k] === id) { out.push(k); } }); return out; }
+
+  /* 📌 aus „Meine Karten“ / Großansicht: für welchen Platz? */
+  function pinDialog(id) {
+    var r = loadColl().cards[id];
+    if (!r || !r.card) { return; }
+    openAdv();
+    var box = $('advBox');
+    box.appendChild(advHead('📌 Aufs Startbild'));
+    box.appendChild(el('div', 'meta', r.card.name + ' – wo soll die Karte auf dem Startbild zu sehen sein?'));
+    var btns = el('div', 'btns');
+    ['one', 'left', 'right'].forEach(function (k) {
+      var b = el('button', 'btn' + (pinsOf(id).indexOf(k) > -1 ? ' yellow' : '')); b.type = 'button';
+      b.appendChild(el('span', 'ic', k === 'one' ? '🃏' : k === 'left' ? '◀️' : '▶️')); b.appendChild(document.createTextNode(PICK_NAMES[k] + (pinsOf(id).indexOf(k) > -1 ? ' ✔' : '')));
+      b.addEventListener('click', function () { setPick(k, id); closeAdv(); renderColl(); startArt(); });
+      btns.appendChild(b);
+    });
+    if (pinsOf(id).length) {
+      var rm = el('button', 'btn small grey'); rm.type = 'button';
+      rm.appendChild(el('span', 'ic', '🎲')); rm.appendChild(document.createTextNode('Pin entfernen'));
+      rm.addEventListener('click', function () { pinsOf(id).forEach(function (k) { setPick(k, ''); }); closeAdv(); renderColl(); startArt(); });
+      btns.appendChild(rm);
+    }
+    box.appendChild(btns);
+  }
+
+  /* ✏️ an der Startkachel: Bilderraster mit allen Karten */
+  function openPicker(mode) {
+    var pool = collList(false).filter(function (r) { return r.card && (r.card.img || r.card.imgHi); });
+    openAdv();
+    var box = $('advBox'), slots = mode === 'one' ? ['one'] : ['left', 'right'], idx = 0, favOnly = false, typ = '';
+    function render() {
+      clear(box);
+      box.appendChild(advHead(mode === 'one' ? '✏️ Welche Karte bei „1 Karte“?' : '✏️ Welche Karten beim Vergleich?'));
+      if (!pool.length) { box.appendChild(el('div', 'meta', 'Du hast noch keine Karten gesammelt.')); return; }
+      if (slots.length === 2) { box.appendChild(el('div', 'fnote', idx === 0 ? '👆 Tipp die LINKE Karte an.' : '👆 Jetzt die RECHTE Karte antippen.')); }
+      var bar = el('div', 'tfbar'), fb = el('button', favOnly ? 'on' : '', '💎 Favoriten'); fb.type = 'button';
+      fb.addEventListener('click', function () { favOnly = !favOnly; render(); }); bar.appendChild(fb);
+      var have = {}; pool.forEach(function (r) { recType(r).forEach(function (k) { have[k] = 1; }); });
+      TYPES.concat([['sonstige', '🃏 Sonstige', null]]).filter(function (t) { return have[t[0]]; }).forEach(function (t) {
+        var b = el('button', typ === t[0] ? 'on' : '', t[1]); b.type = 'button';
+        b.addEventListener('click', function () { typ = typ === t[0] ? '' : t[0]; render(); }); bar.appendChild(b);
+      });
+      box.appendChild(bar);
+      var cur = getPicks(), grid = el('div', 'pgrid');
+      pool.filter(function (r) { return (!favOnly || r.fav) && (!typ || recType(r).indexOf(typ) > -1); }).forEach(function (r) {
+        var cell = el('div', 'pcell' + (slots.some(function (k) { return cur[k] === r.id; }) ? ' on' : ''));
+        cell.appendChild(artImg(r.card));
+        cell.addEventListener('click', function () {
+          setPick(slots[idx], r.id);
+          if (idx < slots.length - 1) { idx++; render(); } else { closeAdv(); startArt(); }
+        });
+        grid.appendChild(cell);
+      });
+      box.appendChild(grid);
+      var bt = el('div', 'btns'); bt.style.marginTop = '12px';
+      var rz = el('button', 'btn small grey'); rz.type = 'button';
+      rz.appendChild(el('span', 'ic', '🎲')); rz.appendChild(document.createTextNode('Zufällig'));
+      rz.addEventListener('click', function () { slots.forEach(function (k) { setPick(k, ''); }); closeAdv(); startArt(); });
+      bt.appendChild(rz); box.appendChild(bt);
+    }
+    render();
+  }
+
   var artPick = null;
   function artImg(c) {
     var im = el('img'); im.alt = ''; im.draggable = false;
@@ -4992,22 +5199,38 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     im.onerror();
     return im;
   }
-  /* Startkacheln: zufällige echte Karten aus der Sammlung (bei jedem Neuladen neu gemischt) */
+  /* Startkacheln: gewählte Karten, sonst zufällige aus der Sammlung (bei jedem Neuladen neu gemischt) */
   function startArt() {
     var pool = collList(false).filter(function (r) { return r.card && (r.card.img || r.card.imgHi); });
     if (!artPick) {
       var a = pool.slice();
       for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
-      artPick = a.map(function (r) { return r.card; });
+      artPick = a.map(function (r) { return r.id; });
     }
+    var cards = loadColl().cards, pk = getPicks();
+    function cardOf(id) { return pickRec(id) ? cards[id].card : null; }
+    function fresh(skip) { for (var n = 0; n < artPick.length; n++) { var c = cardOf(artPick[n]); if (c && skip.indexOf(artPick[n]) === -1) { return artPick[n]; } } return null; }
+    var oneId = cardOf(pk.one) ? pk.one : fresh([]);
+    var lId = cardOf(pk.left) ? pk.left : null, rId = cardOf(pk.right) ? pk.right : null;
+    if (!lId) { lId = fresh([rId]); }
+    if (!rId) { rId = fresh([lId]); }
+    if (!rId && lId) { rId = lId; }
     var one = $('goOne').querySelector('.si'), two = $('goTwo').querySelector('.si');
     if (!one.getAttribute('data-orig')) { one.setAttribute('data-orig', one.innerHTML); two.setAttribute('data-orig', two.innerHTML); }
-    if (artPick.length >= 1 && !one.classList.contains('art')) {
-      one.className = 'si art one'; clear(one); one.appendChild(artImg(artPick[0]));
-    }
-    if (artPick.length >= 2 && !two.classList.contains('art')) {
-      two.className = 'si art two'; clear(two); two.appendChild(artImg(artPick[1])); two.appendChild(artImg(artPick[2 % artPick.length === 1 ? 1 : (artPick.length > 2 ? 2 : 0)]));
-    }
+    if (oneId) { one.className = 'si art one'; clear(one); one.appendChild(artImg(cards[oneId].card)); }
+    else { one.className = 'si'; one.innerHTML = one.getAttribute('data-orig'); }
+    if (lId && rId && lId !== rId) { two.className = 'si art two'; clear(two); two.appendChild(artImg(cards[lId].card)); two.appendChild(artImg(cards[rId].card)); }
+    else { two.className = 'si'; two.innerHTML = two.getAttribute('data-orig'); }
+    ['goOne', 'goTwo'].forEach(function (tid) {
+      var t = $(tid);
+      if (!t.querySelector('.pen')) {
+        var pb = el('button', 'pen', '✏️'); pb.type = 'button'; pb.title = 'Karten fürs Startbild wählen';
+        function go(ev) { ev.stopPropagation(); ev.preventDefault(); openPicker(tid === 'goOne' ? 'one' : 'two'); }
+        pb.addEventListener('click', go);
+        pb.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+        t.appendChild(pb);
+      }
+    });
   }
   renderColl();
   $('collExp').addEventListener('click', exportColl);
@@ -5041,6 +5264,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     var coll = loadColl(); n.forEach(function (r) { delete coll.cards[r.id]; scanDel(r.id); }); saveColl(coll);
   });
   $('revGo').addEventListener('click', startReval);
+  $('typGo').addEventListener('click', startTypes);
+  $('typStop').addEventListener('click', function () { typRun.stop = true; $('typProg').textContent = '⏹️ Wird nach der aktuellen Karte abgebrochen …'; });
   $('revStop').addEventListener('click', function () { rev.stop = true; $('revProg').textContent = '⏹️ Wird nach der aktuellen Karte abgebrochen …'; });
   $('cardOv').addEventListener('click', function (ev) { if (ev.target === $('cardOv')) { closeCardOv(); } });
   $('homeBtn').addEventListener('click', function () { if (screen === 'in') { newCompare(); } else { showScreen('start'); } });
