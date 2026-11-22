@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Karten-Check v1.35</title>
+<title>Karten-Check v1.36</title>
 <meta name="theme-color" content="#2563eb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -336,7 +336,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   <div class="hero">
     <div class="logo">🃏✨💰</div>
     <h1>Karten-Check</h1>
-    <div class="ver">Version 1.35 · 22.11.2026</div>
+    <div class="ver">Version 1.36 · 22.11.2026</div>
   </div>
 
   <div id="scrStart" class="scr">
@@ -543,7 +543,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 (function () {
   'use strict';
 
-  var APP_VERSION = '1.35';
+  var APP_VERSION = '1.36';
   var REPORT_MAIL = '';
 
   /* ===== Eingebauter Gemini-Schlüssel (nur private Nutzung, Datei nicht weitergeben) ===== */
@@ -1200,7 +1200,12 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     return next().then(function (cards) {
       if (cards) { return withImages(cards, lg); }
       if (!fallback) { return []; }
-      fallback.forEach(function (c) { c.mismatch = true; c.wanted = (n || '?') + (t ? '/' + t : ''); });
+      fallback.forEach(function (c) {
+        c.mismatch = true; c.wanted = (n || '?') + (t ? '/' + t : '');
+        c.simPi = c.pi;
+        c.pi = { trend: null, low: null, avg7: null, avg30: null, rev: null, revLabel: '', cmUrl: c.simPi ? c.simPi.cmUrl : null, cmDate: '', variants: [], tcgUrl: null, tcgDate: '' };
+        c.avail = null;
+      });
       return withImages(fallback, lg);
     });
   }
@@ -1379,8 +1384,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
         throw err;
       }
       var c0 = list[0];
-      finalVerdict(slot, hasPrice(c0.pi), c0.name + ' · ' + (c0.setName || '?') + ' · ' +
-        (hasPrice(c0.pi) ? 'Preis gefunden (' + c0.src + ')' : 'kein Preis gefunden'));
+      finalVerdict(slot, c0.mismatch ? null : hasPrice(c0.pi), c0.name + ' · ' + (c0.setName || '?') + ' · ' +
+        (c0.mismatch ? 'genau diese Karte (Nr. ' + c0.wanted + ') nicht in der Datenbank – Wert unbekannt' : hasPrice(c0.pi) ? 'Preis gefunden (' + c0.src + ')' : 'kein Preis gefunden'));
       return list;
     });
   }
@@ -2202,6 +2207,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     return { val: null, cur: 'EUR', src: '', tcg: null, note: '' };
   }
 
+  function st0(slot) { return state[slot] || {}; }
   function curCard(slot) { var st = state[slot]; return st && st.list ? st.list[st.idx] : null; }
 
   function addRow(table, label, value, link) {
@@ -2406,8 +2412,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     if (card.mismatch) {
       txt.appendChild(el('div', 'mismatch', card.anniv
         ? '🎉 Das ist die 30-Jahre-Sonderausgabe (30th Celebration). Die finde ich noch nicht in der Datenbank – einen Preis gebe ich lieber nicht an, weil die normale Ausgabe viel weniger wert ist.'
-        : '🤔 Genau diese Karte (Nr. ' + card.wanted + ') kenne ich noch nicht. Der Preis ist von einer anderen Ausgabe (' +
-        card.setName + ' ' + card.number + '/' + card.total + ') und kann abweichen.'));
+        : '❓ Diese Karte ist ganz neu für mich. Ihren Wert kenne ich noch nicht.'));
     }
     var mb = memoryBlock(slot);
     if (mb) { txt.appendChild(mb); }
@@ -2417,6 +2422,14 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     if (!compact) {
       var ad = el('details', 'mini adult');
       ad.appendChild(el('summary', null, '👨 Für Erwachsene: Details, Preise, Korrektur'));
+      if (card.mismatch && !card.anniv) {
+        ad.appendChild(el('div', 'mismatch', '🤔 Genau diese Karte (Nr. ' + card.wanted + ') steht noch nicht in der Datenbank. Gefunden wurde nur eine andere Ausgabe (' +
+          card.setName + ' ' + card.number + '/' + card.total + '). Ihr Preis steht unten nur zum Vergleich und zählt nicht als Wert dieser Karte. Die Karte kommt mit ❓ ins Album und wird bei „Sammlung neu bewerten“ erneut gesucht.'));
+        if (card.simPi && hasPrice(card.simPi)) {
+          ad.appendChild(el('div', 'meta', 'Zum Vergleich – Preis der anderen Ausgabe:'));
+          ad.appendChild(priceBadge(card.simPi, st0(slot).variant));
+        }
+      }
       ad.appendChild(adultHead(slot));
       ad.appendChild(detailBlock(slot, true));
       box.appendChild(ad);
@@ -2670,7 +2683,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   function logQuick(slot) {
     var q = quickOf(slot);
     if (q.ignored && q.ignored.length) { logStep(slot, '🛡️ Gemini-Hinweise ignoriert', 0).done(null, q.ignored.join(' · ')); }
-    if (q.state === 'none') { logStep(slot, '🛡️ Schnellcheck Echtheit', 0).done(null, 'nicht möglich (keine Fotodaten)'); return; }
+    if (q.state === 'none') { logStep(slot, '🛡️ Schnellcheck Echtheit', 0).done(null, q.mismatch ? 'nicht möglich (nur andere Ausgabe gefunden – kein passendes Vergleichsbild)' : 'nicht möglich (keine Fotodaten)'); return; }
     logStep(slot, '🛡️ Schnellcheck Echtheit', 0).done(q.state === 'ok',
       AUTH_LABEL[q.state] + ' · geprüft: ' + q.checked.join(', ') + (q.flags.length ? ' · ' + q.flags.map(function (f) { return f.txt; }).join('; ') : ''));
   }
@@ -3475,10 +3488,10 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   function cardSpeech(slot) {
     var st = state[slot], c = curCard(slot);
     if (!c) { return ''; }
+    if (c.mismatch) { return 'Das ist ' + c.name + (c.anniv ? ', eine Sonderkarte zum dreißigsten Geburtstag.' : '. Genau diese Karte kenne ich noch nicht.') + ' Ihren Wert weiß ich noch nicht.'; }
     var p = pickPrice(c.pi, st.variant), t = kidTier(p.val, p.cur);
     if (!t) { return 'Das ist ' + c.name + '. Für diese Karte habe ich leider keinen Preis gefunden.'; }
     var extra = st.fromMemory ? (isStale(st.fromMemory) ? ' Die Karte kenne ich schon, aber der Preis ist alt. Lass ihn bitte neu prüfen.' : ' Die Karte kenne ich übrigens schon.') : '';
-    if (c.mismatch) { return 'Das ist ' + c.name + '. Genau diese Karte kenne ich noch nicht. Eine ähnliche ist ungefähr ' + kidSpeakPrice(p.val, p.cur) + ' wert.'; }
     return 'Das ist ' + c.name + '! Sie ist ungefähr ' + kidSpeakPrice(p.val, p.cur) + ' wert. Das ist so viel wie ' + t.speak + '.' + extra;
   }
 
@@ -3486,6 +3499,11 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     var st = state[slot], c = curCard(slot);
     var p = pickPrice(c.pi, st.variant), t = kidTier(p.val, p.cur);
     var w = el('div', 'kid' + (big ? ' big' : ''));
+    if (c.mismatch) {
+      w.appendChild(el('div', 'kicon', '❓'));
+      w.appendChild(el('div', 'kprice none', 'Wert noch unbekannt'));
+      return w;
+    }
     if (!t) {
       w.appendChild(el('div', 'kicon', '🤷'));
       w.appendChild(el('div', 'kprice none', 'Kein Preis'));
@@ -3547,6 +3565,10 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   /* ---------- Änderungshistorie ---------- */
 
   var CHANGELOG = [
+    ['1.36', '22.11.2026', ['Neue Karten, die noch nicht in der Datenbank stehen: Statt dem Preis einer falschen Ausgabe zeigt die App jetzt ❓ („Wert noch unbekannt“). Vorgelesen wird, dass die Karte neu ist.',
+      'Solche Karten kommen trotzdem ins Album: mit deinem Foto als Bild, Name und Nummer von der KI und dem Typ vom Foto (nicht aus der falschen Datenbankkarte). Beim Gesamtwert zählen sie nicht mit.',
+      '„Sammlung neu bewerten“ sucht Karten mit ❓ erneut. Hat die Datenbank sie inzwischen, erscheinen sie mit echtem Preis in der Auswertung und ersetzen die ❓-Karte (Favorit, Typ und Foto bleiben).',
+      'Erwachsenen-Bereich: Der Preis der gefundenen anderen Ausgabe steht nur noch zum Vergleich da. Im Ablauf-Protokoll steht bei fehlender Referenz „andere Ausgabe“ statt „keine Fotodaten“.']],
     ['1.35', '22.11.2026', ['Ausschnitt: Beim Zuschneiden kommt rundum etwas Rand dazu (ca. 6 %), damit nichts abgeschnitten wird. Hinweistext: lieber etwas zu weit als zu eng.',
       'Typ: Die KI liest beim Scannen auch den Typ vom Symbol oben rechts. Fehlt der Typ in der Datenbank (neue Sets), gilt der vom Foto. Deine Korrektur geht immer vor.',
       'Erwachsenen-Bereich: „🏷️ Typen nachbessern“ liest den Typ bei Karten unter „Sonstige“ aus dem gespeicherten Foto, mit Liste zum Abwählen.',
@@ -3686,7 +3708,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     var cards = loadColl().cards, best = null;
     Object.keys(cards).forEach(function (id) {
       var r = cards[id];
-      if (r.archived) { return; }
+      if (r.archived || (r.card && r.card.unk)) { return; }
       if (r.keys && r.keys.some(function (k) { return keys.indexOf(k) > -1; })) {
         if (!best || r.checked > best.checked) { best = r; }
       }
@@ -3695,14 +3717,46 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   }
 
   /* Gewählte Karte einer Prüfung speichern bzw. aktualisieren */
+  /* Karte, die es in der Datenbank (noch) nicht gibt: eigene Angaben von der KI, kein fremdes Bild, kein Preis */
+  var unkUrls = {};
+  function unkCard(c, info) {
+    var u = {}; for (var kk in c) { if (Object.prototype.hasOwnProperty.call(c, kk)) { u[kk] = c[kk]; } }
+    var n = normNum(info.number), t = normNum(info.printed_total);
+    delete u.simPi;
+    u.unk = true; u.mismatch = true;
+    u.id = 'unk:' + normTxt(c.name) + '|' + String(info.set_code || '').toLowerCase() + '|' + (n || '?') + '/' + (t || '?') + '|' + (langCode(info) || '');
+    u.number = n || c.number; u.total = t || '';
+    u.setName = c.anniv ? '30th Celebration (noch nicht in der Datenbank)' : (info.set_name || (info.set_code ? 'Set ' + info.set_code : 'noch nicht in der Datenbank'));
+    u.rarity = ''; u.img = ''; u.imgHi = ''; u.types = []; u.dexId = '';
+    u.q = { name: info.name || '', name_en: info.name_en || '', number: info.number || '', printed_total: info.printed_total || '', language: info.language || '',
+      set_code: info.set_code || '', variant: info.variant || '', anniversary_30: info.anniversary_30 || '' };
+    return u;
+  }
+  /* Wird eine ❓-Karte später gefunden: Favorit, Typ, Foto und Datum in die echte Karte übernehmen */
+  function absorbUnk(coll, id, keys, hasNewScan) {
+    var nr = coll.cards[id];
+    Object.keys(coll.cards).forEach(function (oid) {
+      var o = coll.cards[oid];
+      if (oid === id || !o || !o.card || !o.card.unk || !o.keys) { return; }
+      if (!o.keys.some(function (k) { return keys.indexOf(k) > -1; })) { return; }
+      if (o.fav) { nr.fav = true; }
+      if (o.typeOv && !nr.typeOv) { nr.typeOv = o.typeOv; }
+      if (o.first && o.first < nr.first) { nr.first = o.first; }
+      if (o.scan && !hasNewScan) { nr.scan = true; scanGet(oid).then(function (b) { return b ? scanPut(id, b) : null; }).then(function () { return scanDel(oid); }); }
+      else { scanDel(oid); }
+      delete coll.cards[oid];
+    });
+  }
+
   function rememberCard(slot) {
     var st = state[slot], c = curCard(slot);
-    if (!st || !c || st.fromMemory || c.mismatch) { return; }
+    if (!st || !c || st.fromMemory) { return; }
+    var info = st.info || {};
+    if (c.mismatch) { c = unkCard(c, info); }
     var coll = loadColl(), id = cardKey(c);
     if (st.savedId && st.savedId !== id && st.createdNew) { delete coll.cards[st.savedId]; scanDel(st.savedId); }
     var old = coll.cards[id];
-    var info = st.info || {};
-    var a30 = IS30_RE.test(c.setName || '');
+    var a30 = IS30_RE.test(c.setName || '') || !!c.anniv;
     var keys = matchKeys([c.name, info.name, info.name_en], info.number || c.number, info.printed_total || c.total, a30)
       .concat(matchKeys([c.name], c.number, c.total, a30));
     if (old && old.keys) { old.keys.forEach(function (k) { if (keys.indexOf(k) === -1) { keys.push(k); } }); }
@@ -3716,7 +3770,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     if (old && old.typeOv) { coll.cards[id].typeOv = old.typeOv; }
     var aiT = mapType(info.type) || (old && old.typeAi) || '';
     if (aiT) { coll.cards[id].typeAi = aiT; }
-    if (lastImg[slot]) { makeThumb(lastImg[slot].parts[0]).then(function (b) { return b ? scanPut(id, b) : false; }); }
+    if (lastImg[slot]) { makeThumb(lastImg[slot].parts[0]).then(function (b) { return b ? scanPut(id, b) : false; }); if (unkUrls[id]) { URL.revokeObjectURL(unkUrls[id]); delete unkUrls[id]; } }
+    if (!c.unk) { absorbUnk(coll, id, keys, !!lastImg[slot]); }
     st.createdNew = st.savedId === id ? st.createdNew : !old;
     st.savedId = id;
     saveColl(coll);
@@ -3987,6 +4042,11 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       var row = el('div', 'crow' + (isStale(r) ? ' stale' : ''));
       var ib = el('div', 'cimg');
       if (r.card && r.card.img) { var im = el('img'); im.src = r.card.img; im.alt = ''; im.loading = 'lazy'; ib.appendChild(im); }
+      else if (r.card && r.card.unk && r.scan) {
+        var um = el('img'); um.alt = ''; ib.appendChild(um);
+        if (unkUrls[r.id]) { um.src = unkUrls[r.id]; }
+        else { (function (rid, img) { scanGet(rid).then(function (b) { if (b) { unkUrls[rid] = URL.createObjectURL(b); img.src = unkUrls[rid]; } }); })(r.id, um); }
+      }
       else { ib.appendChild(el('div', 'cph', '🃏')); }
       ib.addEventListener('click', function () { openCardOv(r.id); });
       row.appendChild(ib);
@@ -3998,9 +4058,9 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       var t = kidTier(r.price && r.price.val, r.price && r.price.cur);
       var right = el('div', 'cright');
       var ci = el('div', 'cicon');
-      if (t && t.kind === 'gummi') { ci.appendChild(bearImg(0)); } else if (t && t.kind === 'eis') { ci.appendChild(eisImg(t.n)); } else { ci.textContent = t ? t.icon : '🤷'; }
+      if (t && t.kind === 'gummi') { ci.appendChild(bearImg(0)); } else if (t && t.kind === 'eis') { ci.appendChild(eisImg(t.n)); } else { ci.textContent = r.card && r.card.unk ? '❓' : t ? t.icon : '🤷'; }
       right.appendChild(ci);
-      right.appendChild(el('div', 'cprice', r.price && isNum(r.price.val) ? kidPrice(r.price.val, r.price.cur) : '–'));
+      right.appendChild(el('div', 'cprice', r.card && r.card.unk ? '?' : r.price && isNum(r.price.val) ? kidPrice(r.price.val, r.price.cur) : '–'));
       var fav = el('button', 'cfav' + (r.fav ? ' on' : ''), '💎');
       fav.type = 'button'; fav.title = 'Favorit';
       fav.addEventListener('click', function () { toggleFav(r.id); });
@@ -4017,7 +4077,8 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
       row.appendChild(right);
       box.appendChild(row);
     });
-    box.appendChild(el('div', 'csum', '💰 Alle Karten zusammen: ' + kidPrice(total, cur) + ' (laut letztem Check)'));
+    var nUnk = all.filter(function (r) { return r.card && r.card.unk; }).length;
+    box.appendChild(el('div', 'csum', '💰 Alle Karten zusammen: ' + (total > 0 ? kidPrice(total, cur) : '0 Cent') + ' (laut letztem Check)' + (nUnk ? ' – ' + nUnk + ' Karte' + (nUnk === 1 ? '' : 'n') + ' mit ❓ nicht eingerechnet' : '')));
   }
 
   /* Archiv und Kartenverwaltung (nur Erwachsenen-Bereich) */
@@ -4110,6 +4171,9 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
 
   function refreshCardData(rec) {
     var c = rec.card || {}, id = c.id || '';
+    if (c.unk && c.q) {
+      return runSearch('R', c.q).then(function (list) { return list && list[0] ? list[0] : null; });
+    }
     if (/^dex:/.test(id)) {
       var lang = c.lang || 'en';
       return fetchJson(DEX + lang + '/cards/' + encodeURIComponent(id.slice(4)), {}, 30000, 'Kartendatenbank TCGdex').then(function (j) {
@@ -4145,8 +4209,9 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     var pr = nw.price;
     it.newEur = isNum(pr.val) ? toEur(pr.val, pr.cur) : null;
     if (it.changed) { it.flags.push({ t: '🔄 Anders erkannt: ' + nw.card.name + ' · ' + (nw.card.setName || '?') + ' · ' + nw.card.number }); }
-    if (nw.card.mismatch) { it.flags.push({ t: nw.card.anniv ? '🎉 30th-Karte nicht in der Datenbank' : '🤔 nur andere Ausgabe gefunden', bad: true }); }
-    if (it.newEur === null) { it.flags.push({ t: '🤷 kein Preis', bad: true }); }
+    var stillUnk = !!(r.card && r.card.unk && nw.card.mismatch);
+    if (nw.card.mismatch) { it.flags.push({ t: stillUnk ? '❓ noch nicht in der Datenbank – bleibt ❓' : nw.card.anniv ? '🎉 30th-Karte nicht in der Datenbank' : '🤔 nur andere Ausgabe gefunden', bad: true }); }
+    if (it.newEur === null && !stillUnk) { it.flags.push({ t: '🤷 kein Preis', bad: true }); }
     if (it.newEur !== null && it.oldEur !== null && it.oldEur > 0 && Math.abs(it.newEur - it.oldEur) / it.oldEur > 0.5) { it.flags.push({ t: '⚠️ über 50 % Veränderung' }); }
     it.sel = it.newEur !== null && !nw.card.mismatch;
   }
@@ -4171,13 +4236,14 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
           var c = x.list[0];
           var v = fitVar(c, normVariant(x.info.variant));
           it.nw = { card: c, variant: v, info: x.info, price: pickPrice(c.pi, v) };
-          it.changed = cardKey(c) !== r.id;
+          it.changed = !c.mismatch && cardKey(c) !== r.id;
         });
       } else {
         job = refreshCardData(r).then(function (c) {
           if (!c) { throw new Error('Karte in der Datenbank nicht mehr abrufbar'); }
           var v = fitVar(c, r.variant || 'normal');
-          it.nw = { card: c, variant: v, info: null, price: pickPrice(c.pi, v) };
+          it.nw = { card: c, variant: v, info: r.card && r.card.unk ? r.card.q : null, price: pickPrice(c.pi, v) };
+          it.changed = !c.mismatch && cardKey(c) !== r.id;
         });
       }
       job.catch(function (e) { it.err = niceError(e); it.nw = null; }).then(function () { judgeRev(it); items.push(it); setTimeout(next, 0); });
@@ -4264,7 +4330,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
   function applyReval(items) {
     var coll = loadColl(), n = 0;
     items.forEach(function (it) {
-      if (!it.sel || !it.nw) { return; }
+      if (!it.sel || !it.nw || it.nw.card.mismatch) { return; }
       var old = coll.cards[it.r.id];
       if (!old) { return; }
       var c = it.nw.card, newId = cardKey(c), info = it.nw.info || {};
@@ -4440,7 +4506,7 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
     x.addEventListener('click', closeCardOv);
     top.appendChild(x);
     box.appendChild(top);
-    var pair = el('div', 'pair' + (r.scan ? '' : ' one'));
+    var pair = el('div', 'pair' + (r.scan && !c.unk ? '' : ' one'));
     var scanFig = null;
     if (r.scan) {
       scanFig = el('figure');
@@ -4453,24 +4519,27 @@ h2{font-family:Fredoka,Nunito,sans-serif;font-weight:700;font-size:1.5rem}
         else { pair.removeChild(scanFig); pair.className = 'pair one'; }
       });
     }
-    var ff = el('figure', 'found');
-    var fi = el('img'); fi.alt = c.name;
-    var chain = [c.imgHi, c.img].filter(function (u) { return u; }), ci = 0;
-    function nxt() { if (ci < chain.length) { fi.src = chain[ci++]; } else { fi.style.display = 'none'; } }
-    fi.onerror = nxt; nxt();
-    ff.appendChild(fi);
-    ff.appendChild(el('figcaption', null, '🗂️ Gefundene Karte'));
-    pair.appendChild(ff);
+    if (!c.unk) {
+      var ff = el('figure', 'found');
+      var fi = el('img'); fi.alt = c.name;
+      var chain = [c.imgHi, c.img].filter(function (u) { return u; }), ci = 0;
+      var nxt = function () { if (ci < chain.length) { fi.src = chain[ci++]; } else { fi.style.display = 'none'; } };
+      fi.onerror = nxt; nxt();
+      ff.appendChild(fi);
+      ff.appendChild(el('figcaption', null, '🗂️ Gefundene Karte'));
+      pair.appendChild(ff);
+    }
     box.appendChild(pair);
     if (!r.scan) { box.appendChild(el('div', 'meta', 'Zu dieser Karte ist kein eigenes Foto gespeichert (sie wurde vor Version 1.30 gecheckt oder per Hand eingegeben).')); }
     var t = kidTier(r.price && r.price.val, r.price && r.price.cur);
     var kid = el('div', 'kid big');
-    kid.appendChild(kidIconEl(t));
-    kid.appendChild(el('div', t ? 'kprice' : 'kprice none', t ? kidPrice(r.price.val, r.price.cur) : 'Kein Preis'));
+    kid.appendChild(c.unk ? el('div', 'kicon', '❓') : kidIconEl(t));
+    kid.appendChild(el('div', t ? 'kprice' : 'kprice none', t ? kidPrice(r.price.val, r.price.cur) : (c.unk ? 'Wert noch unbekannt' : 'Kein Preis')));
     if (t) { kid.appendChild(el('div', 'kword', 'So viel wie ' + t.word)); }
     box.appendChild(kid);
     box.appendChild(el('div', 'meta', '📦 ' + (c.setName || '?') + ' · Nr. ' + c.number + (c.total ? '/' + c.total : '') + (c.rarity ? ' · ⭐ ' + c.rarity : '') + ' · ' + VNAME[r.variant || 'normal']));
     box.appendChild(el('div', 'meta', (isStale(r) ? '⏰ Alter Preis vom ' : '📅 Gecheckt am ') + dateDe(r.checked) + (isStale(r) ? ' – bitte neu checken' : '')));
+    if (c.unk) { box.appendChild(el('div', 'meta', '🤔 Diese Karte steht noch nicht in der Datenbank. Bei „Sammlung neu bewerten“ wird sie erneut gesucht.')); }
     box.appendChild(el('div', 'meta', '🏷️ Typ: ' + typeLabel(recType(r)[0]) + (r.typeOv ? ' (von dir geändert)' : (!typeKeysRaw(r.card).length && r.typeAi ? ' (vom Foto gelesen)' : ''))));
     var tw = el('div', 'tfbar');
     TYPES.concat([['sonstige', '🃏 Sonstige', null]]).forEach(function (t) {
